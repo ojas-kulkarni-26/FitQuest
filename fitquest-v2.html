@@ -1,0 +1,5809 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <meta name="theme-color" content="#080c14" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <title>FitQuest</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;500;600;700&family=Share+Tech+Mono&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ── Reset & Root ── */
+      :root {
+        --bg: #07090f;
+        --bg2: #0d1117;
+        --bg3: #111827;
+        --panel: #0d1424;
+        --border: #1a2d4a;
+        --border2: #243b5e;
+        --accent: #00c8f0;
+        --accent-dim: rgba(0, 200, 240, 0.15);
+        --accent2: #ff6b2b;
+        --accent2-dim: rgba(255, 107, 43, 0.15);
+        --gold: #f5c400;
+        --gold-dim: rgba(245, 196, 0, 0.15);
+        --green: #22c55e;
+        --green-dim: rgba(34, 197, 94, 0.15);
+        --red: #ef4444;
+        --purple: #a855f7;
+        --purple-dim: rgba(168, 85, 247, 0.15);
+        --text: #94afd1;
+        --text-bright: #e8f1ff;
+        --text-dim: #3d5a7a;
+        --font-ui: "Rajdhani", sans-serif;
+        --font-hud: "Orbitron", monospace;
+        --font-mono: "Share Tech Mono", monospace;
+        --safe-bottom: env(safe-area-inset-bottom, 0px);
+        --nav-h: 64px;
+      }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        -webkit-tap-highlight-color: transparent;
+      }
+      html {
+        height: 100%;
+        overflow: hidden;
+      }
+      body {
+        background: var(--bg);
+        color: var(--text);
+        font-family: var(--font-ui);
+        font-size: 16px;
+        height: 100%;
+        overflow: hidden;
+        position: relative;
+      }
+      /* Noise texture overlay */
+      body::after {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 9998;
+        opacity: 0.5;
+      }
+
+      /* ── App Shell ── */
+      #app-shell {
+        display: none;
+        height: 100%;
+        flex-direction: column;
+      }
+      #app-shell.ready {
+        display: flex;
+      }
+      .topbar {
+        height: 52px;
+        background: var(--bg2);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        padding: 0 16px;
+        gap: 12px;
+        flex-shrink: 0;
+        position: relative;
+        z-index: 100;
+      }
+      .topbar-logo {
+        font-family: var(--font-hud);
+        font-size: 13px;
+        color: var(--accent);
+        letter-spacing: 3px;
+        text-shadow: 0 0 15px var(--accent);
+      }
+      .topbar-spacer {
+        flex: 1;
+      }
+      .topbar-xp {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--gold);
+      }
+      .topbar-level {
+        background: var(--accent-dim);
+        border: 1px solid var(--accent);
+        border-radius: 6px;
+        padding: 2px 10px;
+        font-family: var(--font-hud);
+        font-size: 11px;
+        color: var(--accent);
+      }
+
+      .screens {
+        flex: 1;
+        overflow: hidden;
+        position: relative;
+      }
+      .screen {
+        position: absolute;
+        inset: 0;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding-bottom: calc(var(--nav-h) + var(--safe-bottom) + 8px);
+        display: none;
+        -webkit-overflow-scrolling: touch;
+      }
+      .screen.active {
+        display: block;
+      }
+      /* Custom scrollbar */
+      .screen::-webkit-scrollbar {
+        width: 3px;
+      }
+      .screen::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .screen::-webkit-scrollbar-thumb {
+        background: var(--border2);
+        border-radius: 2px;
+      }
+
+      /* ── Bottom Nav ── */
+      .bottom-nav {
+        height: var(--nav-h);
+        background: var(--bg2);
+        border-top: 1px solid var(--border);
+        display: flex;
+        flex-shrink: 0;
+        padding-bottom: var(--safe-bottom);
+        position: relative;
+        z-index: 100;
+      }
+      .nav-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 3px;
+        background: none;
+        border: none;
+        color: var(--text-dim);
+        cursor: pointer;
+        font-family: var(--font-ui);
+        font-size: 9px;
+        font-weight: 600;
+        letter-spacing: 1px;
+        transition: color 0.2s;
+        padding: 8px 0;
+        position: relative;
+      }
+      .nav-btn.active {
+        color: var(--accent);
+      }
+      .nav-btn .nicon {
+        font-size: 19px;
+        transition: transform 0.2s;
+      }
+      .nav-btn.active .nicon {
+        transform: scale(1.15);
+      }
+      .nav-btn::before {
+        content: "";
+        position: absolute;
+        bottom: 0;
+        left: 20%;
+        right: 20%;
+        height: 2px;
+        background: var(--accent);
+        border-radius: 2px;
+        transform: scaleX(0);
+        transition: transform 0.2s;
+      }
+      .nav-btn.active::before {
+        transform: scaleX(1);
+      }
+
+      /* ── Cards ── */
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 16px;
+        margin: 10px 14px;
+      }
+      .card-title {
+        font-family: var(--font-hud);
+        font-size: 10px;
+        letter-spacing: 2.5px;
+        color: var(--text-dim);
+        margin-bottom: 14px;
+        text-transform: uppercase;
+      }
+      .section-label {
+        font-family: var(--font-hud);
+        font-size: 10px;
+        letter-spacing: 2px;
+        color: var(--text-dim);
+        padding: 14px 14px 6px;
+        text-transform: uppercase;
+      }
+
+      /* ── Buttons ── */
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 13px 20px;
+        border: none;
+        border-radius: 10px;
+        font-family: var(--font-hud);
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        cursor: pointer;
+        transition: all 0.15s;
+        text-transform: uppercase;
+        gap: 8px;
+      }
+      .btn:active {
+        transform: scale(0.96);
+      }
+      .btn-block {
+        width: 100%;
+        display: flex;
+      }
+      .btn-primary {
+        background: var(--accent);
+        color: var(--bg);
+        box-shadow: 0 0 20px rgba(0, 200, 240, 0.25);
+      }
+      .btn-danger {
+        background: var(--red);
+        color: #fff;
+      }
+      .btn-ghost {
+        background: transparent;
+        border: 1px solid var(--border2);
+        color: var(--text);
+      }
+      .btn-gold {
+        background: var(--gold);
+        color: var(--bg);
+        box-shadow: 0 0 20px rgba(245, 196, 0, 0.25);
+      }
+      .btn-orange {
+        background: var(--accent2);
+        color: #fff;
+        box-shadow: 0 0 20px rgba(255, 107, 43, 0.25);
+      }
+      .btn-sm {
+        padding: 7px 14px;
+        font-size: 10px;
+      }
+
+      /* ── Progress bars ── */
+      .pbar {
+        height: 6px;
+        background: var(--bg3);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .pbar-fill {
+        height: 100%;
+        border-radius: 3px;
+        transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .pbar-lg {
+        height: 10px;
+      }
+      .pbar-xl {
+        height: 14px;
+        border-radius: 7px;
+      }
+
+      /* ── Badges ── */
+      .badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 4px;
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 700;
+      }
+      .badge-cyan {
+        background: var(--accent-dim);
+        color: var(--accent);
+        border: 1px solid rgba(0, 200, 240, 0.3);
+      }
+      .badge-orange {
+        background: var(--accent2-dim);
+        color: var(--accent2);
+        border: 1px solid rgba(255, 107, 43, 0.3);
+      }
+      .badge-gold {
+        background: var(--gold-dim);
+        color: var(--gold);
+        border: 1px solid rgba(245, 196, 0, 0.3);
+      }
+      .badge-green {
+        background: var(--green-dim);
+        color: var(--green);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+      }
+      .badge-red {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--red);
+        border: 1px solid rgba(239, 68, 68, 0.3);
+      }
+      .badge-purple {
+        background: var(--purple-dim);
+        color: var(--purple);
+        border: 1px solid rgba(168, 85, 247, 0.3);
+      }
+
+      /* ── Divider ── */
+      .divider {
+        height: 1px;
+        background: var(--border);
+        margin: 10px 0;
+      }
+
+      /* ── Input ── */
+      input,
+      textarea,
+      select {
+        background: var(--bg3);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-bright);
+        font-family: var(--font-ui);
+        font-size: 16px;
+        padding: 11px 12px;
+        width: 100%;
+        outline: none;
+        transition: border 0.2s;
+        -webkit-appearance: none;
+      }
+      input:focus,
+      textarea:focus,
+      select:focus {
+        border-color: var(--accent);
+      }
+      label {
+        display: block;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--text-dim);
+        letter-spacing: 1px;
+        margin-bottom: 5px;
+      }
+      .form-group {
+        margin-bottom: 14px;
+      }
+
+      /* ── Modals ── */
+      .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.88);
+        z-index: 500;
+        display: none;
+        align-items: flex-end;
+      }
+      .modal-overlay.show {
+        display: flex;
+      }
+      .modal {
+        background: var(--bg2);
+        border: 1px solid var(--border2);
+        border-radius: 22px 22px 0 0;
+        width: 100%;
+        max-height: 92vh;
+        overflow-y: auto;
+        padding: 6px 16px 32px;
+        animation: modal-in 0.28s cubic-bezier(0.34, 1.2, 0.64, 1);
+      }
+      .modal::-webkit-scrollbar {
+        width: 0;
+      }
+      @keyframes modal-in {
+        from {
+          transform: translateY(100%);
+        }
+        to {
+          transform: translateY(0);
+        }
+      }
+      .modal-handle {
+        width: 36px;
+        height: 4px;
+        background: var(--border2);
+        border-radius: 2px;
+        margin: 10px auto 16px;
+      }
+      .modal-title {
+        font-family: var(--font-hud);
+        font-size: 14px;
+        color: var(--accent);
+        letter-spacing: 2px;
+        margin-bottom: 18px;
+        text-align: center;
+      }
+
+      /* ── Toast ── */
+      #toast {
+        position: fixed;
+        top: 60px;
+        left: 50%;
+        transform: translateX(-50%) translateY(-120px);
+        background: var(--bg2);
+        border: 1px solid var(--border2);
+        border-radius: 12px;
+        padding: 10px 18px;
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--accent);
+        z-index: 9000;
+        transition: transform 0.3s cubic-bezier(0.34, 1.2, 0.64, 1);
+        white-space: nowrap;
+        box-shadow: 0 0 20px rgba(0, 200, 240, 0.2);
+        max-width: 90vw;
+        text-align: center;
+      }
+      #toast.show {
+        transform: translateX(-50%) translateY(0);
+      }
+      #toast.toast-gold {
+        color: var(--gold);
+        border-color: var(--gold);
+        box-shadow: 0 0 20px rgba(245, 196, 0, 0.2);
+      }
+      #toast.toast-green {
+        color: var(--green);
+        border-color: var(--green);
+      }
+      #toast.toast-red {
+        color: var(--red);
+        border-color: var(--red);
+      }
+
+      /* ── Level-Up Overlay ── */
+      #levelup-screen {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.97);
+        z-index: 9500;
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 24px;
+        text-align: center;
+      }
+      #levelup-screen.show {
+        display: flex;
+      }
+      .lu-rays {
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          ellipse at center,
+          rgba(245, 196, 0, 0.08) 0%,
+          transparent 70%
+        );
+        animation: pulse-ray 2s ease-in-out infinite;
+      }
+      @keyframes pulse-ray {
+        0%,
+        100% {
+          opacity: 0.5;
+        }
+        50% {
+          opacity: 1;
+        }
+      }
+      .lu-icon {
+        font-size: 80px;
+        margin-bottom: 12px;
+        animation: lu-bounce 0.7s ease-in-out infinite alternate;
+        position: relative;
+      }
+      @keyframes lu-bounce {
+        from {
+          transform: scale(0.9) rotate(-3deg);
+        }
+        to {
+          transform: scale(1.1) rotate(3deg);
+        }
+      }
+      .lu-label {
+        font-family: var(--font-hud);
+        font-size: 11px;
+        letter-spacing: 4px;
+        color: var(--text-dim);
+        margin-bottom: 6px;
+        position: relative;
+      }
+      .lu-name {
+        font-family: var(--font-hud);
+        font-size: 28px;
+        font-weight: 900;
+        color: var(--gold);
+        text-shadow: 0 0 30px var(--gold);
+        line-height: 1.2;
+        margin-bottom: 6px;
+        position: relative;
+      }
+      .lu-subtitle {
+        font-size: 14px;
+        color: var(--text);
+        margin-bottom: 24px;
+        position: relative;
+      }
+      .lu-rewards {
+        width: 100%;
+        max-width: 320px;
+        margin-bottom: 28px;
+        position: relative;
+      }
+      .lu-reward {
+        background: var(--gold-dim);
+        border: 1px solid rgba(245, 196, 0, 0.3);
+        border-radius: 10px;
+        padding: 11px 16px;
+        margin-bottom: 8px;
+        font-size: 14px;
+        color: var(--gold);
+      }
+
+      /* ── Onboarding ── */
+      #onboarding {
+        position: fixed;
+        inset: 0;
+        background: var(--bg);
+        z-index: 10000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 24px;
+        text-align: center;
+      }
+      .ob-logo {
+        font-family: var(--font-hud);
+        font-size: 38px;
+        font-weight: 900;
+        color: var(--accent);
+        text-shadow: 0 0 40px var(--accent);
+        letter-spacing: 6px;
+        margin-bottom: 6px;
+      }
+      .ob-sub {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--text-dim);
+        letter-spacing: 3px;
+        margin-bottom: 48px;
+      }
+      .ob-warrior {
+        font-size: 72px;
+        margin-bottom: 32px;
+        animation: ob-float 3s ease-in-out infinite;
+      }
+      @keyframes ob-float {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-12px);
+        }
+      }
+      .ob-intro {
+        font-size: 14px;
+        color: var(--text);
+        line-height: 1.7;
+        margin-bottom: 32px;
+        max-width: 320px;
+      }
+
+      /* ── HOME SCREEN ── */
+      .hero {
+        background: linear-gradient(
+          160deg,
+          #0a1628 0%,
+          #0d2040 40%,
+          #091020 100%
+        );
+        padding: 20px 16px 18px;
+        position: relative;
+        overflow: hidden;
+      }
+      .hero::before {
+        content: "";
+        position: absolute;
+        top: -40%;
+        left: -20%;
+        width: 140%;
+        height: 200%;
+        background: radial-gradient(
+          ellipse at 30% 40%,
+          rgba(0, 200, 240, 0.06) 0%,
+          transparent 60%
+        );
+        animation: hero-pulse 5s ease-in-out infinite;
+      }
+      @keyframes hero-pulse {
+        0%,
+        100% {
+          opacity: 0.5;
+          transform: scale(1);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.05);
+        }
+      }
+      .zone-chip {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--text-dim);
+        letter-spacing: 2px;
+        margin-bottom: 4px;
+      }
+      .zone-name {
+        font-family: var(--font-hud);
+        font-size: 21px;
+        font-weight: 900;
+        color: var(--accent);
+        text-shadow: 0 0 20px rgba(0, 200, 240, 0.5);
+      }
+      .level-row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin: 14px 0;
+      }
+      .big-level {
+        font-family: var(--font-hud);
+        font-size: 56px;
+        font-weight: 900;
+        color: var(--text-bright);
+        line-height: 1;
+        text-shadow: 0 0 30px rgba(232, 241, 255, 0.2);
+      }
+      .level-meta {
+        flex: 1;
+      }
+      .level-title {
+        font-family: var(--font-hud);
+        font-size: 14px;
+        color: var(--gold);
+        text-shadow: 0 0 12px rgba(245, 196, 0, 0.4);
+      }
+      .level-sub {
+        font-size: 13px;
+        color: var(--text-dim);
+        margin-top: 3px;
+      }
+      .xp-row {
+        display: flex;
+        justify-content: space-between;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--text-dim);
+        margin-bottom: 5px;
+      }
+      .xp-bar {
+        height: 8px;
+        background: rgba(0, 0, 0, 0.4);
+        border-radius: 4px;
+        overflow: hidden;
+        border: 1px solid var(--border);
+      }
+      .xp-bar-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent), #0066ff);
+        transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 0 0 8px var(--accent);
+      }
+
+      .streak-days {
+        display: flex;
+        gap: 5px;
+        margin: 8px 0;
+      }
+      .streak-pip {
+        flex: 1;
+        height: 30px;
+        border-radius: 7px;
+        background: var(--bg3);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 9px;
+        font-family: var(--font-mono);
+        color: var(--text-dim);
+        transition: all 0.3s;
+      }
+      .streak-pip.done {
+        background: var(--green-dim);
+        border-color: var(--green);
+        color: var(--green);
+      }
+      .streak-pip.today-empty {
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      /* Mission cards */
+      .mission-card {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 13px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .mission-card:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+      }
+      .mission-icon {
+        font-size: 24px;
+        flex-shrink: 0;
+      }
+      .mission-body {
+        flex: 1;
+      }
+      .mission-title {
+        font-weight: 700;
+        font-size: 15px;
+        color: var(--text-bright);
+      }
+      .mission-desc {
+        font-size: 12px;
+        color: var(--text-dim);
+        margin-top: 2px;
+        line-height: 1.4;
+      }
+      .mission-xp {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--gold);
+        flex-shrink: 0;
+      }
+      .mission-done-btn {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        border: 2px solid var(--border2);
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 13px;
+        flex-shrink: 0;
+        transition: all 0.2s;
+      }
+      .mission-done-btn.done {
+        background: var(--green);
+        border-color: var(--green);
+        box-shadow: 0 0 10px rgba(34, 197, 94, 0.4);
+      }
+
+      /* ── WORKOUT SCREEN ── */
+      #screen-workout {
+        background: var(--bg);
+      }
+      .workout-hero {
+        background: linear-gradient(135deg, #0a1020, #101828);
+        padding: 16px 14px 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      .phase-block {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        margin: 10px 14px;
+        overflow: hidden;
+      }
+      .phase-header {
+        padding: 12px 16px;
+        background: rgba(0, 0, 0, 0.2);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .phase-name {
+        font-family: var(--font-hud);
+        font-size: 11px;
+        letter-spacing: 2px;
+      }
+      .phase-time {
+        margin-left: auto;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--text-dim);
+      }
+      .ex-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 14px 16px;
+        border-bottom: 1px solid rgba(26, 45, 74, 0.5);
+        cursor: pointer;
+        transition: background 0.15s;
+        -webkit-tap-highlight-color: transparent;
+      }
+      .ex-row:last-child {
+        border-bottom: none;
+      }
+      .ex-row:active {
+        background: rgba(0, 200, 240, 0.04);
+      }
+      .ex-num {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        background: var(--bg3);
+        border: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--text-dim);
+        flex-shrink: 0;
+      }
+      .ex-body {
+        flex: 1;
+      }
+      .ex-name {
+        font-weight: 700;
+        font-size: 15px;
+        color: var(--text-bright);
+        margin-bottom: 2px;
+      }
+      .ex-sets {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--text-dim);
+      }
+      .ex-tag {
+        display: inline-block;
+        margin-top: 4px;
+        font-size: 9px;
+        padding: 2px 7px;
+        border-radius: 3px;
+        background: var(--accent-dim);
+        color: var(--accent);
+        border: 1px solid rgba(0, 200, 240, 0.2);
+        font-family: var(--font-mono);
+      }
+      .ex-arrow {
+        color: var(--text-dim);
+        font-size: 18px;
+        align-self: center;
+        flex-shrink: 0;
+      }
+
+      /* ── GUIDED WORKOUT (fullscreen) ── */
+      #guided-workout {
+        position: fixed;
+        inset: 0;
+        background: var(--bg);
+        z-index: 800;
+        display: none;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      #guided-workout.show {
+        display: flex;
+      }
+      .gw-topbar {
+        padding: 12px 16px;
+        background: var(--bg2);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-shrink: 0;
+      }
+      .gw-progress-bar {
+        flex: 1;
+        height: 6px;
+        background: var(--bg3);
+        border-radius: 3px;
+        overflow: hidden;
+      }
+      .gw-progress-fill {
+        height: 100%;
+        background: var(--accent);
+        border-radius: 3px;
+        transition: width 0.5s;
+      }
+      .gw-step-label {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--text-dim);
+        flex-shrink: 0;
+      }
+      .gw-body {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 20px 24px;
+        text-align: center;
+        overflow: hidden;
+      }
+
+      /* Phase header step */
+      .gw-phase-card {
+        text-align: center;
+        padding: 40px 20px;
+      }
+      .gw-phase-icon {
+        font-size: 56px;
+        margin-bottom: 16px;
+      }
+      .gw-phase-label {
+        font-family: var(--font-hud);
+        font-size: 22px;
+        font-weight: 900;
+        letter-spacing: 3px;
+        margin-bottom: 8px;
+      }
+      .gw-phase-sub {
+        font-size: 14px;
+        color: var(--text-dim);
+      }
+
+      /* Timed exercise step */
+      .gw-ex-icon {
+        font-size: 52px;
+        margin-bottom: 10px;
+      }
+      .gw-ex-name {
+        font-family: var(--font-hud);
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--text-bright);
+        letter-spacing: 1px;
+        margin-bottom: 6px;
+      }
+      .gw-ex-set {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        color: var(--text-dim);
+        margin-bottom: 16px;
+      }
+      .gw-timer {
+        font-family: var(--font-hud);
+        font-size: 88px;
+        font-weight: 900;
+        color: var(--text-bright);
+        line-height: 1;
+        margin-bottom: 8px;
+        transition: color 0.3s;
+      }
+      .gw-timer.warning {
+        color: var(--accent2);
+      }
+      .gw-timer.done-color {
+        color: var(--green);
+      }
+      .gw-info-box {
+        background: var(--bg3);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px;
+        margin-bottom: 20px;
+        text-align: left;
+        max-height: 120px;
+        overflow-y: auto;
+        font-size: 13px;
+        color: var(--text);
+        line-height: 1.6;
+      }
+      .gw-info-box::-webkit-scrollbar {
+        width: 0;
+      }
+      .gw-ex-tag-line {
+        margin-bottom: 10px;
+      }
+
+      /* Reps exercise step */
+      .gw-reps-display {
+        font-family: var(--font-hud);
+        font-size: 52px;
+        font-weight: 900;
+        color: var(--accent);
+        margin-bottom: 6px;
+      }
+      .gw-reps-label {
+        font-size: 14px;
+        color: var(--text-dim);
+        margin-bottom: 20px;
+      }
+
+      /* Rest step */
+      .gw-rest-card {
+        text-align: center;
+      }
+      .gw-rest-label {
+        font-family: var(--font-hud);
+        font-size: 13px;
+        letter-spacing: 3px;
+        color: var(--text-dim);
+        margin-bottom: 10px;
+      }
+      .gw-rest-timer {
+        font-family: var(--font-hud);
+        font-size: 72px;
+        font-weight: 900;
+        color: var(--purple);
+        line-height: 1;
+      }
+      .gw-rest-sub {
+        font-size: 13px;
+        color: var(--text-dim);
+        margin-top: 8px;
+      }
+
+      .gw-footer {
+        padding: 16px 16px;
+        background: var(--bg2);
+        border-top: 1px solid var(--border);
+        flex-shrink: 0;
+        display: flex;
+        gap: 10px;
+        padding-bottom: calc(16px + var(--safe-bottom));
+      }
+      .gw-skip {
+        background: transparent;
+        border: 1px solid var(--border2);
+        color: var(--text-dim);
+        border-radius: 10px;
+        padding: 13px 20px;
+        font-family: var(--font-hud);
+        font-size: 11px;
+        letter-spacing: 1px;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+
+      /* ── BOSS SCREEN ── */
+      .boss-locked {
+        text-align: center;
+        padding: 40px 20px;
+        font-size: 14px;
+        color: var(--text-dim);
+        line-height: 1.8;
+      }
+      .boss-card {
+        background: linear-gradient(145deg, #160e06, #261404);
+        border: 1px solid var(--accent2);
+        border-radius: 16px;
+        margin: 10px 14px;
+        padding: 24px 18px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 0 30px rgba(255, 107, 43, 0.1);
+      }
+      .boss-icon {
+        font-size: 64px;
+        margin-bottom: 12px;
+      }
+      .boss-name {
+        font-family: var(--font-hud);
+        font-size: 19px;
+        font-weight: 900;
+        color: var(--accent2);
+        letter-spacing: 3px;
+        margin-bottom: 8px;
+        text-shadow: 0 0 15px rgba(255, 107, 43, 0.4);
+      }
+      .boss-desc {
+        font-size: 13px;
+        color: var(--text);
+        line-height: 1.6;
+        margin-bottom: 4px;
+      }
+      .boss-challenge-row {
+        background: rgba(255, 107, 43, 0.08);
+        border: 1px solid rgba(255, 107, 43, 0.2);
+        border-radius: 10px;
+        padding: 13px 14px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        text-align: left;
+      }
+      .bc-icon {
+        font-size: 22px;
+        flex-shrink: 0;
+      }
+      .bc-body {
+        flex: 1;
+      }
+      .bc-name {
+        font-weight: 700;
+        font-size: 14px;
+        color: var(--text-bright);
+      }
+      .bc-req {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--accent2);
+        margin-top: 2px;
+      }
+      .bc-check {
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        border: 2px solid var(--border2);
+        background: transparent;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-size: 12px;
+        flex-shrink: 0;
+        transition: all 0.2s;
+      }
+      .bc-check.done {
+        background: var(--accent2);
+        border-color: var(--accent2);
+        box-shadow: 0 0 10px rgba(255, 107, 43, 0.4);
+      }
+      .boss-reward-box {
+        background: var(--gold-dim);
+        border: 1px solid rgba(245, 196, 0, 0.3);
+        border-radius: 10px;
+        padding: 13px;
+        margin: 10px 14px;
+      }
+
+      /* ── NUTRITION SCREEN ── */
+      .nutrient-bars {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .nutrient-row {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+      }
+      .nutrient-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .nutrient-name {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text-bright);
+      }
+      .nutrient-val {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+      .nutrient-targets {
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+        color: var(--text-dim);
+        font-family: var(--font-mono);
+        margin-top: 2px;
+      }
+
+      .food-search-wrap {
+        position: relative;
+        margin-bottom: 12px;
+      }
+      .food-search-wrap input {
+        padding-left: 36px;
+      }
+      .food-search-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-dim);
+        font-size: 16px;
+      }
+      .food-result {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 11px 14px;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .food-result:active {
+        background: var(--accent-dim);
+      }
+      .food-result-name {
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--text-bright);
+      }
+      .food-result-meta {
+        font-family: var(--font-mono);
+        font-size: 11px;
+        color: var(--text-dim);
+        margin-top: 2px;
+      }
+      .food-result-protein {
+        font-family: var(--font-mono);
+        font-size: 13px;
+        color: var(--accent);
+      }
+
+      .water-add-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .water-count {
+        font-family: var(--font-hud);
+        font-size: 32px;
+        font-weight: 900;
+        color: var(--accent);
+      }
+      .water-unit {
+        font-size: 13px;
+        color: var(--text-dim);
+      }
+      .water-bubbles {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin: 10px 0;
+      }
+      .water-bubble {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--accent-dim);
+        border: 1px solid var(--accent);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .water-bubble.filled {
+        background: var(--accent);
+        box-shadow: 0 0 8px var(--accent);
+      }
+
+      /* logged food row */
+      .food-logged-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .food-logged-row:last-child {
+        border-bottom: none;
+      }
+      .flr-name {
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--text-bright);
+        flex: 1;
+      }
+      .flr-qty {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--text-dim);
+      }
+      .flr-cal {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        color: var(--gold);
+      }
+      .flr-del {
+        color: var(--red);
+        cursor: pointer;
+        font-size: 20px;
+        padding: 0 4px;
+      }
+
+      /* ── STATS SCREEN ── */
+      .stat-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+        margin: 10px 14px;
+      }
+      .stat-card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px;
+        text-align: center;
+      }
+      .stat-num {
+        font-family: var(--font-hud);
+        font-size: 30px;
+        font-weight: 900;
+      }
+      .stat-label {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--text-dim);
+        margin-top: 3px;
+        letter-spacing: 1px;
+      }
+
+      /* Heatmap */
+      .heatmap-grid {
+        display: grid;
+        grid-template-columns: repeat(8, 1fr);
+        gap: 3px;
+      }
+      .hm-cell {
+        aspect-ratio: 1;
+        border-radius: 3px;
+        background: var(--bg3);
+        transition: background 0.3s;
+      }
+      .hm-cell.xp-low {
+        background: rgba(0, 200, 240, 0.2);
+      }
+      .hm-cell.xp-med {
+        background: rgba(0, 200, 240, 0.45);
+      }
+      .hm-cell.xp-high {
+        background: rgba(0, 200, 240, 0.75);
+      }
+      .hm-cell.xp-max {
+        background: var(--accent);
+        box-shadow: 0 0 4px var(--accent);
+      }
+      .hm-cell.today-cell {
+        outline: 1px solid var(--accent);
+      }
+
+      /* Canvas charts */
+      .chart-wrap {
+        position: relative;
+        width: 100%;
+        margin: 4px 0;
+      }
+
+      /* Level roadmap */
+      .roadmap-item {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      .roadmap-item:last-child {
+        border-bottom: none;
+      }
+      .rm-circle {
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: var(--font-hud);
+        font-size: 13px;
+        font-weight: 700;
+        flex-shrink: 0;
+        transition: all 0.3s;
+      }
+      .rm-name {
+        font-weight: 700;
+        font-size: 14px;
+      }
+      .rm-sub {
+        font-size: 12px;
+        color: var(--text-dim);
+        margin-top: 2px;
+      }
+
+      /* ── Misc helpers ── */
+      .flex {
+        display: flex;
+      }
+      .flex-col {
+        flex-direction: column;
+      }
+      .items-center {
+        align-items: center;
+      }
+      .justify-between {
+        justify-content: space-between;
+      }
+      .gap-8 {
+        gap: 8px;
+      }
+      .gap-12 {
+        gap: 12px;
+      }
+      .w-full {
+        width: 100%;
+      }
+      .text-center {
+        text-align: center;
+      }
+      .px-14 {
+        padding: 0 14px;
+      }
+      .mt-10 {
+        margin-top: 10px;
+      }
+      .mb-16 {
+        margin-bottom: 16px;
+      }
+      .text-bright {
+        color: var(--text-bright);
+      }
+      .text-dim {
+        color: var(--text-dim);
+      }
+      .text-accent {
+        color: var(--accent);
+      }
+      .text-gold {
+        color: var(--gold);
+      }
+      .text-green {
+        color: var(--green);
+      }
+      .text-orange {
+        color: var(--accent2);
+      }
+      .font-hud {
+        font-family: var(--font-hud);
+      }
+      .font-mono {
+        font-family: var(--font-mono);
+      }
+      .note {
+        background: var(--accent-dim);
+        border-left: 3px solid var(--accent);
+        padding: 10px 12px;
+        border-radius: 0 8px 8px 0;
+        font-size: 13px;
+        color: var(--text);
+        line-height: 1.6;
+        margin: 8px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ── ONBOARDING ── -->
+    <div id="onboarding">
+      <div class="ob-logo">FITQUEST</div>
+      <div class="ob-sub">FITNESS RPG</div>
+      <div class="ob-warrior">⚔️</div>
+      <p class="ob-intro">
+        You're 15. BMI 14.4. That changes now. 20 minutes a day. No excuses.
+        This is your quest log.
+      </p>
+      <div style="width: 100%; max-width: 360px">
+        <div class="form-group">
+          <label>YOUR WARRIOR NAME</label>
+          <input
+            type="text"
+            id="ob-name"
+            placeholder="Enter your name..."
+            style="text-align: center; font-size: 18px"
+          />
+        </div>
+        <button class="btn btn-primary btn-block" onclick="App.startJourney()">
+          BEGIN JOURNEY ⚡
+        </button>
+      </div>
+    </div>
+
+    <!-- ── TOAST ── -->
+    <div id="toast"></div>
+
+    <!-- ── LEVEL UP OVERLAY ── -->
+    <div id="levelup-screen">
+      <div class="lu-rays"></div>
+      <div class="lu-icon" id="lu-icon">🏆</div>
+      <div class="lu-label">LEVEL UP</div>
+      <div class="lu-name" id="lu-name">LEVEL 2</div>
+      <div class="lu-subtitle" id="lu-subtitle">Awakening</div>
+      <div class="lu-rewards" id="lu-rewards"></div>
+      <button
+        class="btn btn-gold"
+        style="max-width: 280px"
+        onclick="App.closeLevelUp()"
+      >
+        CLAIM REWARDS ⚡
+      </button>
+    </div>
+
+    <!-- ── GUIDED WORKOUT ── -->
+    <div id="guided-workout">
+      <div class="gw-topbar">
+        <button
+          class="btn btn-sm btn-ghost"
+          onclick="GW.confirmQuit()"
+          style="padding: 6px 12px; font-size: 10px"
+        >
+          ✕ QUIT
+        </button>
+        <div class="gw-progress-bar">
+          <div class="gw-progress-fill" id="gw-prog-fill"></div>
+        </div>
+        <div class="gw-step-label" id="gw-step-label">0/0</div>
+      </div>
+      <div class="gw-body" id="gw-body"></div>
+      <div class="gw-footer" id="gw-footer"></div>
+    </div>
+
+    <!-- ── EXERCISE DETAIL MODAL ── -->
+    <div class="modal-overlay" id="ex-modal">
+      <div class="modal">
+        <div class="modal-handle"></div>
+        <div class="modal-title" id="ex-modal-title">EXERCISE</div>
+        <div id="ex-modal-body"></div>
+        <button
+          class="btn btn-ghost btn-block"
+          style="margin-top: 12px"
+          onclick="UI.closeModal('ex-modal')"
+        >
+          CLOSE
+        </button>
+      </div>
+    </div>
+
+    <!-- ── ADD FOOD MODAL ── -->
+    <div class="modal-overlay" id="food-modal">
+      <div class="modal">
+        <div class="modal-handle"></div>
+        <div class="modal-title">LOG FOOD</div>
+        <div class="food-search-wrap">
+          <span class="food-search-icon">🔍</span>
+          <input
+            type="text"
+            id="food-search"
+            placeholder="Search food..."
+            oninput="Nutrition.searchFoods(this.value)"
+          />
+        </div>
+        <div
+          id="food-search-results"
+          style="
+            max-height: 280px;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            margin-bottom: 14px;
+          "
+        ></div>
+        <button
+          class="btn btn-ghost btn-block"
+          onclick="
+            UI.closeModal('food-modal');
+            Nutrition.openAddCustom();
+          "
+        >
+          + Add Custom Food
+        </button>
+        <button
+          class="btn btn-ghost btn-block"
+          style="margin-top: 8px"
+          onclick="UI.closeModal('food-modal')"
+        >
+          CANCEL
+        </button>
+      </div>
+    </div>
+
+    <!-- ── QTY MODAL ── -->
+    <div class="modal-overlay" id="qty-modal">
+      <div class="modal">
+        <div class="modal-handle"></div>
+        <div class="modal-title" id="qty-modal-title">QUANTITY</div>
+        <div
+          id="qty-modal-food-preview"
+          style="
+            background: var(--bg3);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 16px;
+          "
+        ></div>
+        <div class="form-group">
+          <label id="qty-unit-label">QUANTITY (g)</label>
+          <input
+            type="number"
+            id="qty-input"
+            placeholder="100"
+            min="1"
+            max="2000"
+          />
+        </div>
+        <button
+          class="btn btn-primary btn-block"
+          onclick="Nutrition.confirmAddFood()"
+        >
+          ADD TO LOG ✓
+        </button>
+        <button
+          class="btn btn-ghost btn-block"
+          style="margin-top: 8px"
+          onclick="UI.closeModal('qty-modal')"
+        >
+          CANCEL
+        </button>
+      </div>
+    </div>
+
+    <!-- ── CUSTOM FOOD MODAL ── -->
+    <div class="modal-overlay" id="custom-food-modal">
+      <div class="modal">
+        <div class="modal-handle"></div>
+        <div class="modal-title">ADD CUSTOM FOOD</div>
+        <div class="form-group">
+          <label>FOOD NAME</label
+          ><input type="text" id="cf-name" placeholder="e.g. Dal Makhani" />
+        </div>
+        <div class="form-group">
+          <label>SERVING SIZE (g or ml)</label
+          ><input type="number" id="cf-serving" placeholder="100" />
+        </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+          <div class="form-group">
+            <label>CALORIES (kcal)</label
+            ><input type="number" id="cf-cal" placeholder="0" />
+          </div>
+          <div class="form-group">
+            <label>PROTEIN (g)</label
+            ><input type="number" id="cf-protein" placeholder="0" />
+          </div>
+          <div class="form-group">
+            <label>CARBS (g)</label
+            ><input type="number" id="cf-carbs" placeholder="0" />
+          </div>
+          <div class="form-group">
+            <label>FAT (g)</label
+            ><input type="number" id="cf-fat" placeholder="0" />
+          </div>
+          <div class="form-group">
+            <label>FIBER (g)</label
+            ><input type="number" id="cf-fiber" placeholder="0" />
+          </div>
+          <div class="form-group">
+            <label>CALCIUM (mg)</label
+            ><input type="number" id="cf-calcium" placeholder="0" />
+          </div>
+        </div>
+        <button
+          class="btn btn-primary btn-block"
+          onclick="Nutrition.saveCustomFood()"
+        >
+          SAVE FOOD
+        </button>
+        <button
+          class="btn btn-ghost btn-block"
+          style="margin-top: 8px"
+          onclick="UI.closeModal('custom-food-modal')"
+        >
+          CANCEL
+        </button>
+      </div>
+    </div>
+
+    <!-- ── BOSS QUIT CONFIRM ── -->
+    <div class="modal-overlay" id="gw-quit-modal">
+      <div class="modal">
+        <div class="modal-handle"></div>
+        <div class="modal-title" style="color: var(--red)">QUIT WORKOUT?</div>
+        <p
+          style="
+            text-align: center;
+            color: var(--text);
+            font-size: 14px;
+            margin-bottom: 24px;
+            line-height: 1.6;
+          "
+        >
+          You won't earn XP for an incomplete session. Are you sure?
+        </p>
+        <button class="btn btn-danger btn-block" onclick="GW.quit()">
+          QUIT — LOSE PROGRESS
+        </button>
+        <button
+          class="btn btn-ghost btn-block"
+          style="margin-top: 8px"
+          onclick="UI.closeModal('gw-quit-modal')"
+        >
+          KEEP GOING
+        </button>
+      </div>
+    </div>
+
+    <!-- ── APP SHELL ── -->
+    <div id="app-shell">
+      <div class="topbar">
+        <div class="topbar-logo">FITQUEST</div>
+        <div class="topbar-spacer"></div>
+        <div class="topbar-xp" id="topbar-xp">⚡ 0 XP</div>
+        <div class="topbar-level" id="topbar-level">LVL 1</div>
+      </div>
+
+      <div class="screens">
+        <!-- HOME -->
+        <div class="screen active" id="screen-home">
+          <div class="hero">
+            <div class="zone-chip" id="h-zone-chip">ZONE 1</div>
+            <div class="zone-name" id="h-zone-name">ROOKIE GROUNDS</div>
+            <div class="level-row">
+              <div class="big-level" id="h-lvl-num">1</div>
+              <div class="level-meta">
+                <div class="level-title" id="h-lvl-title">FIRST BOOT</div>
+                <div class="level-sub" id="h-lvl-sub">Zone 1 · Level 1</div>
+              </div>
+            </div>
+            <div class="xp-row">
+              <span>XP PROGRESS</span>
+              <span id="h-xp-text">0 / 200 XP</span>
+            </div>
+            <div class="xp-bar">
+              <div class="xp-bar-fill" id="h-xp-fill" style="width: 0%"></div>
+            </div>
+          </div>
+
+          <div class="card" style="margin-top: 12px">
+            <div class="card-title">WEEKLY STREAK</div>
+            <div class="streak-days" id="h-streak-days"></div>
+            <div class="flex justify-between" style="margin-top: 6px">
+              <span class="text-dim" style="font-size: 13px"
+                >Current streak</span
+              >
+              <span class="font-mono text-accent" id="h-streak-count"
+                >0 🔥</span
+              >
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">TODAY'S MISSIONS</div>
+            <div id="h-missions-list"></div>
+          </div>
+
+          <div class="px-14 mt-10 mb-16">
+            <button
+              class="btn btn-primary btn-block"
+              id="h-start-btn"
+              onclick="GW.start()"
+            >
+              ⚡ START TODAY'S WORKOUT
+            </button>
+            <div
+              id="h-done-msg"
+              style="
+                display: none;
+                text-align: center;
+                padding: 14px;
+                font-family: var(--font-mono);
+                font-size: 12px;
+                color: var(--green);
+              "
+            >
+              ✓ WORKOUT COMPLETE TODAY — SEE YOU TOMORROW
+            </div>
+          </div>
+        </div>
+
+        <!-- WORKOUT -->
+        <div class="screen" id="screen-workout">
+          <div class="workout-hero">
+            <div
+              class="font-hud"
+              style="
+                font-size: 11px;
+                color: var(--text-dim);
+                letter-spacing: 2px;
+                margin-bottom: 6px;
+              "
+            >
+              TODAY'S MISSION
+            </div>
+            <div
+              id="w-badges"
+              style="
+                display: flex;
+                gap: 8px;
+                flex-wrap: wrap;
+                margin-bottom: 10px;
+              "
+            ></div>
+            <button
+              class="btn btn-primary btn-block"
+              id="w-start-btn"
+              onclick="GW.start()"
+            >
+              ⚡ BEGIN GUIDED SESSION
+            </button>
+            <div
+              id="w-done-msg"
+              style="
+                display: none;
+                text-align: center;
+                padding: 10px;
+                font-family: var(--font-mono);
+                font-size: 12px;
+                color: var(--green);
+                margin-top: 8px;
+              "
+            >
+              ✓ DONE TODAY
+            </div>
+          </div>
+          <div id="workout-phases"></div>
+        </div>
+
+        <!-- BOSS -->
+        <div class="screen" id="screen-boss">
+          <div
+            style="padding: 14px 14px 6px"
+            class="flex justify-between items-center"
+          >
+            <div
+              class="font-hud"
+              style="
+                font-size: 11px;
+                color: var(--text-dim);
+                letter-spacing: 2px;
+              "
+            >
+              BOSS CHAMBER
+            </div>
+          </div>
+          <div id="boss-content"></div>
+        </div>
+
+        <!-- NUTRITION -->
+        <div class="screen" id="screen-nutrition">
+          <div
+            style="padding: 14px 14px 6px"
+            class="flex justify-between items-center"
+          >
+            <div
+              class="font-hud"
+              style="
+                font-size: 11px;
+                color: var(--text-dim);
+                letter-spacing: 2px;
+              "
+            >
+              NUTRITION QUEST
+            </div>
+            <button
+              class="btn btn-sm btn-primary"
+              onclick="Nutrition.openFoodModal()"
+            >
+              + LOG FOOD
+            </button>
+          </div>
+
+          <div class="card">
+            <div class="card-title">TODAY'S MACROS & MICROS</div>
+            <div class="nutrient-bars" id="nutrient-bars"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">WATER INTAKE</div>
+            <div class="water-add-row">
+              <div>
+                <span class="water-count" id="water-count">0</span>
+                <span class="water-unit"> glasses</span>
+              </div>
+              <button
+                class="btn btn-sm btn-primary"
+                onclick="Nutrition.addWater()"
+              >
+                + GLASS
+              </button>
+              <button
+                class="btn btn-sm btn-ghost"
+                onclick="Nutrition.removeWater()"
+              >
+                −
+              </button>
+            </div>
+            <div class="water-bubbles" id="water-bubbles"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">TODAY'S LOG</div>
+            <div id="food-log-list"></div>
+            <div
+              id="food-log-empty"
+              style="
+                text-align: center;
+                padding: 20px 0;
+                color: var(--text-dim);
+                font-size: 13px;
+              "
+            >
+              No food logged yet.
+            </div>
+          </div>
+        </div>
+
+        <!-- STATS -->
+        <div class="screen" id="screen-stats">
+          <div class="section-label">STATS & PROGRESS</div>
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-num text-accent" id="st-sessions">0</div>
+              <div class="stat-label">SESSIONS</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-num text-gold" id="st-xp">0</div>
+              <div class="stat-label">TOTAL XP</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-num text-green" id="st-streak">0</div>
+              <div class="stat-label">BEST STREAK</div>
+            </div>
+            <div class="stat-card">
+              <div
+                class="stat-num"
+                style="color: var(--purple)"
+                id="st-missions"
+              >
+                0
+              </div>
+              <div class="stat-label">MISSIONS</div>
+            </div>
+          </div>
+          <!-- Heatmap -->
+          <div class="card">
+            <div class="card-title">ACTIVITY HEATMAP — 56 DAYS</div>
+            <div class="heatmap-grid" id="heatmap-grid"></div>
+            <div
+              class="flex gap-8 items-center"
+              style="
+                margin-top: 10px;
+                font-size: 10px;
+                color: var(--text-dim);
+                font-family: var(--font-mono);
+              "
+            >
+              <span>LESS</span>
+              <div
+                style="
+                  width: 12px;
+                  height: 12px;
+                  border-radius: 2px;
+                  background: var(--bg3);
+                  border: 1px solid var(--border);
+                "
+              ></div>
+              <div
+                style="
+                  width: 12px;
+                  height: 12px;
+                  border-radius: 2px;
+                  background: rgba(0, 200, 240, 0.2);
+                "
+              ></div>
+              <div
+                style="
+                  width: 12px;
+                  height: 12px;
+                  border-radius: 2px;
+                  background: rgba(0, 200, 240, 0.5);
+                "
+              ></div>
+              <div
+                style="
+                  width: 12px;
+                  height: 12px;
+                  border-radius: 2px;
+                  background: var(--accent);
+                  box-shadow: 0 0 4px var(--accent);
+                "
+              ></div>
+              <span>MORE XP</span>
+            </div>
+          </div>
+          <!-- Level progress radial -->
+          <div class="card">
+            <div class="card-title">LEVEL PROGRESS</div>
+            <div style="display: flex; justify-content: center">
+              <div style="width: 200px; height: 200px">
+                <canvas id="level-progress-chart" data-h="200"></canvas>
+              </div>
+            </div>
+            <div id="level-progress-legend"></div>
+          </div>
+          <!-- XP timeline -->
+          <div class="card">
+            <div class="card-title">XP EARNED — LAST 14 DAYS</div>
+            <div style="position: relative; height: 150px">
+              <canvas id="xp-timeline-chart" data-h="150"></canvas>
+            </div>
+          </div>
+          <!-- Sessions per week -->
+          <div class="card">
+            <div class="card-title">SESSIONS PER WEEK — LAST 8 WEEKS</div>
+            <div style="position: relative; height: 150px">
+              <canvas id="sessions-week-chart" data-h="150"></canvas>
+            </div>
+            <div
+              style="
+                margin-top: 8px;
+                display: flex;
+                gap: 12px;
+                font-size: 10px;
+                font-family: var(--font-mono);
+              "
+            >
+              <span style="color: #22c55e">● 5+ great</span
+              ><span style="color: #00c8f0">● 3-4 solid</span
+              ><span style="color: #ff6b2b">● 1-2 low</span>
+            </div>
+          </div>
+          <!-- Nutrition chart -->
+          <div class="card">
+            <div class="card-title">NUTRITION INTAKE — 7 DAYS</div>
+            <div
+              style="
+                display: flex;
+                gap: 6px;
+                flex-wrap: wrap;
+                margin-bottom: 12px;
+              "
+            >
+              <button
+                class="btn btn-sm btn-primary"
+                id="nc-protein"
+                onclick="Stats.setNutrientChart('protein')"
+              >
+                Protein
+              </button>
+              <button
+                class="btn btn-sm btn-ghost"
+                id="nc-calories"
+                onclick="Stats.setNutrientChart('calories')"
+              >
+                Calories
+              </button>
+              <button
+                class="btn btn-sm btn-ghost"
+                id="nc-carbs"
+                onclick="Stats.setNutrientChart('carbs')"
+              >
+                Carbs
+              </button>
+              <button
+                class="btn btn-sm btn-ghost"
+                id="nc-fat"
+                onclick="Stats.setNutrientChart('fat')"
+              >
+                Fat
+              </button>
+              <button
+                class="btn btn-sm btn-ghost"
+                id="nc-fiber"
+                onclick="Stats.setNutrientChart('fiber')"
+              >
+                Fiber
+              </button>
+            </div>
+            <div style="position: relative; height: 160px">
+              <canvas id="nutrition-chart" data-h="160"></canvas>
+            </div>
+            <div
+              id="nc-legend"
+              style="
+                margin-top: 10px;
+                font-size: 11px;
+                font-family: var(--font-mono);
+                display: flex;
+                gap: 16px;
+              "
+            ></div>
+          </div>
+          <!-- Nutrient radar -->
+          <div class="card">
+            <div class="card-title">TODAY'S NUTRIENTS — RADAR (vs ideal)</div>
+            <div style="display: flex; justify-content: center">
+              <div style="width: 240px; height: 220px">
+                <canvas id="nutrient-radar-chart" data-h="220"></canvas>
+              </div>
+            </div>
+            <div
+              style="
+                margin-top: 8px;
+                font-size: 11px;
+                color: var(--text-dim);
+                font-family: var(--font-mono);
+                text-align: center;
+              "
+            >
+              Outer ring = ideal &nbsp;·&nbsp; Dashed = minimum
+            </div>
+          </div>
+          <!-- Roadmap -->
+          <div class="card">
+            <div class="card-title">LEVEL ROADMAP</div>
+            <div id="level-roadmap"></div>
+          </div>
+          <!-- BMI -->
+          <div class="card">
+            <div class="card-title">BODY STATS</div>
+            <div style="display: flex; gap: 10px; margin-bottom: 12px">
+              <div style="flex: 1" class="form-group">
+                <label>WEIGHT (KG)</label
+                ><input type="number" id="bmi-weight" placeholder="52" />
+              </div>
+              <div style="flex: 1" class="form-group">
+                <label>HEIGHT (CM)</label
+                ><input type="number" id="bmi-height" placeholder="190" />
+              </div>
+            </div>
+            <button class="btn btn-ghost btn-block" onclick="Stats.updateBMI()">
+              UPDATE BMI
+            </button>
+            <div
+              id="bmi-result"
+              style="margin-top: 14px; text-align: center"
+            ></div>
+          </div>
+        </div>
+      </div>
+      <!-- /screens -->
+
+      <div class="bottom-nav">
+        <button
+          class="nav-btn active"
+          id="nav-home"
+          onclick="UI.switchScreen('home')"
+        >
+          <span class="nicon">🏠</span>HOME
+        </button>
+        <button
+          class="nav-btn"
+          id="nav-workout"
+          onclick="UI.switchScreen('workout')"
+        >
+          <span class="nicon">⚡</span>TRAIN
+        </button>
+        <button class="nav-btn" id="nav-boss" onclick="UI.switchScreen('boss')">
+          <span class="nicon">👹</span>BOSS
+        </button>
+        <button
+          class="nav-btn"
+          id="nav-nutrition"
+          onclick="UI.switchScreen('nutrition')"
+        >
+          <span class="nicon">🥗</span>FOOD
+        </button>
+        <button
+          class="nav-btn"
+          id="nav-stats"
+          onclick="UI.switchScreen('stats')"
+        >
+          <span class="nicon">📊</span>STATS
+        </button>
+      </div>
+    </div>
+    <!-- /app-shell -->
+
+    <script>
+      // ============================================================
+      // FITQUEST v2 — GAME DATA
+      // ============================================================
+
+      const FQ = {};
+
+      // ============================================================
+      // ZONES & LEVELS
+      // ============================================================
+      FQ.ZONES = [
+        {
+          id: 1,
+          name: "ROOKIE GROUNDS",
+          color: "#00d4ff",
+          unlockMsg: "Your journey begins. Wake up those sleeping muscles.",
+        },
+        {
+          id: 2,
+          name: "IRON DISTRICT",
+          color: "#ff6b35",
+          unlockMsg: "Zone 2. The real work starts. Your body is ready.",
+        },
+        {
+          id: 3,
+          name: "POWER FORGE",
+          color: "#a855f7",
+          unlockMsg: "Zone 3. You're building something real now.",
+        },
+      ];
+
+      FQ.LEVELS = [
+        // ── ZONE 1 ──
+        {
+          id: 1,
+          zone: 1,
+          title: "FIRST BOOT",
+          xpToUnlock: 0,
+          unlockCondition: {
+            sessions: 10,
+            description: "Complete 10 workout sessions",
+          },
+          exercises: {
+            warmup: [
+              {
+                name: "Neck Rolls",
+                type: "timed",
+                duration: 30,
+                icon: "🔄",
+                info: "Slow and controlled. Drop chin to chest, roll right, back, left. Feel every degree. Don't rush.",
+              },
+              {
+                name: "Shoulder Circles",
+                type: "timed",
+                duration: 30,
+                icon: "🔄",
+                info: "Big circles forward first, then backward. Really open up those shoulder joints. Sit up straight while doing this.",
+              },
+              {
+                name: "Hip Circles",
+                type: "timed",
+                duration: 30,
+                icon: "🔄",
+                info: "Hands on hips. Draw big circles with your hips. 15 seconds each direction. Loosen up that lower back.",
+              },
+              {
+                name: "Knee Circles",
+                type: "timed",
+                duration: 30,
+                icon: "🔄",
+                info: "Slight bend in knees, hands on them. Gentle rotation. Warm up the joint, not stress it.",
+              },
+              {
+                name: "Wrist & Ankle Rotations",
+                type: "timed",
+                duration: 30,
+                icon: "🔄",
+                info: "Extend both wrists and rotate. Then lift each foot and rotate ankles. 10 rotations each direction.",
+              },
+              {
+                name: "Arm Swings",
+                type: "timed",
+                duration: 30,
+                icon: "🔄",
+                info: "Swing arms wide then cross chest. Let momentum carry them. Keeps shoulders mobile.",
+              },
+            ],
+            main: [
+              {
+                name: "Wall Push-Ups",
+                type: "reps",
+                sets: 3,
+                reps: 10,
+                icon: "💪",
+                tag: "STRENGTH",
+                info: "Stand arm's length from wall. Hands at shoulder height and width. Body straight as a plank — don't arch your lower back or stick your butt out. Lower chest to wall, push back. Elbows at 45° angle, not flared wide.",
+              },
+              {
+                name: "Glute Bridges",
+                type: "reps",
+                sets: 3,
+                reps: 10,
+                icon: "🍑",
+                tag: "APT FIX",
+                info: "Lie on back. Knees bent, feet flat on floor hip-width apart. Push hips straight up by squeezing glutes — not by pushing with your lower back. Hold 1 second at top. Lower slow. This is your #1 APT exercise. Never skip it.",
+                rest: 30,
+              },
+              {
+                name: "Dead Bug",
+                type: "reps",
+                sets: 3,
+                reps: 5,
+                perSide: true,
+                icon: "🐛",
+                tag: "CORE + APT",
+                info: "Lie on back. Arms pointing to ceiling, knees bent at 90° in the air. Simultaneously lower your right arm back and extend left leg down — slow, 3 seconds. Press your lower back flat to the floor the entire time. Return. Switch sides. If your back arches, you've gone too far.",
+                rest: 30,
+              },
+              {
+                name: "Bodyweight Squat",
+                type: "reps",
+                sets: 3,
+                reps: 10,
+                icon: "🦵",
+                tag: "STRENGTH",
+                info: "Feet shoulder-width, toes slightly out. Arms forward for balance. Lower until thighs are parallel to floor — or as low as comfortable. Keep chest up, tall spine. Don't let knees cave inward. Drive through heels to stand.",
+                rest: 30,
+              },
+              {
+                name: "Plank Hold",
+                type: "timed",
+                duration: 15,
+                sets: 3,
+                icon: "🏋️",
+                tag: "CORE",
+                info: "Forearms on mat, toes on floor. Body is a perfectly straight line from head to heels. Don't let hips sag toward floor or pike up to ceiling. Squeeze glutes and core together. Breathe steadily. Eyes on floor.",
+                rest: 45,
+              },
+            ],
+            cooldown: [
+              {
+                name: "Hip Flexor Stretch — Left",
+                type: "timed",
+                duration: 45,
+                icon: "🧘",
+                tag: "APT CRITICAL",
+                info: "Left knee on floor, right foot forward. Gently push hips forward. Feel the stretch at the front of your left hip. This undoes the damage from sitting all day. NEVER skip this stretch. It is the single most important thing for your APT.",
+              },
+              {
+                name: "Hip Flexor Stretch — Right",
+                type: "timed",
+                duration: 45,
+                icon: "🧘",
+                tag: "APT CRITICAL",
+                info: "Right knee on floor, left foot forward. Same movement other side. Hold steady, breathe into the stretch. Don't bounce.",
+              },
+              {
+                name: "Cat-Cow Stretch",
+                type: "reps",
+                sets: 1,
+                reps: 10,
+                icon: "🐱",
+                tag: "SPINE",
+                info: "On all fours, hands under shoulders, knees under hips. Arch back up like an angry cat (exhale, chin tucks). Then drop belly and lift head like a cow (inhale). Slow and rhythmic. Feel your spine moving.",
+              },
+              {
+                name: "Child's Pose",
+                type: "timed",
+                duration: 60,
+                icon: "🙏",
+                tag: "RECOVERY",
+                info: "Knees wide, sit back toward heels, arms stretched long in front. Rest forehead on mat. Breathe deep into your lower back. Let everything go. You earned this.",
+              },
+            ],
+          },
+        },
+        {
+          id: 2,
+          zone: 1,
+          title: "AWAKENING",
+          xpToUnlock: 200,
+          unlockCondition: {
+            sessions: 12,
+            description: "Complete 12 sessions at Level 1 + reach 200 XP",
+          },
+          exercises: {
+            warmup: [
+              {
+                name: "Neck Rolls",
+                type: "timed",
+                duration: 30,
+                icon: "🔄",
+                info: "You know the drill. Slow and deliberate.",
+              },
+              {
+                name: "Shoulder Circles",
+                type: "timed",
+                duration: 30,
+                icon: "🔄",
+                info: "Big circles. Really open those shoulders.",
+              },
+              {
+                name: "Hip Circles + Leg Swings",
+                type: "timed",
+                duration: 40,
+                icon: "🔄",
+                info: "Hip circles first 20 sec, then front-to-back leg swings 20 sec each leg. Hold wall for balance on swings.",
+              },
+              {
+                name: "Torso Twists",
+                type: "timed",
+                duration: 30,
+                icon: "🔄",
+                info: "Hands on hips. Rotate your upper body side to side. Wake up your thoracic spine.",
+              },
+              {
+                name: "Slow Jumping Jacks",
+                type: "reps",
+                sets: 1,
+                reps: 20,
+                icon: "⚡",
+                info: "Controlled. Just warming up the heart rate. Not a race.",
+              },
+            ],
+            main: [
+              {
+                name: "Incline Push-Ups",
+                type: "reps",
+                sets: 3,
+                reps: 10,
+                icon: "💪",
+                tag: "STRENGTH +",
+                info: "Hands on a sturdy chair or table edge at waist height. Body straight from head to heels. Lower chest to surface, push back. The lower your hands, the harder it gets. This is a big step up from wall push-ups — respect it.",
+                rest: 45,
+              },
+              {
+                name: "Glute Bridges (2-sec Hold)",
+                type: "reps",
+                sets: 3,
+                reps: 12,
+                icon: "🍑",
+                tag: "APT FIX +",
+                info: "Same as Level 1 but squeeze and HOLD at the top for a full 2 seconds. Count it out loud. Really contract those glutes hard. This is where the APT correction happens.",
+                rest: 30,
+              },
+              {
+                name: "Dead Bug",
+                type: "reps",
+                sets: 3,
+                reps: 8,
+                perSide: true,
+                icon: "🐛",
+                tag: "CORE",
+                info: "More reps now. Your lower back should stay GLUED to the floor the entire set. If it lifts even slightly — stop, reset, continue. Quality is everything here.",
+                rest: 30,
+              },
+              {
+                name: "Bodyweight Squat",
+                type: "reps",
+                sets: 3,
+                reps: 15,
+                icon: "🦵",
+                tag: "STRENGTH",
+                info: "15 reps. If they feel easy, slow them down — 3 seconds on the way down, pause at bottom, 1 second up. Never sacrifice form for speed.",
+                rest: 30,
+              },
+              {
+                name: "Plank Hold",
+                type: "timed",
+                duration: 25,
+                sets: 3,
+                icon: "🏋️",
+                tag: "CORE",
+                info: "25 seconds. Ten more than Level 1. If you fail, drop to knees to finish — but try full first. Your core is getting stronger even if it doesn't feel like it.",
+                rest: 45,
+              },
+              {
+                name: "Superman Hold",
+                type: "reps",
+                sets: 3,
+                reps: 8,
+                icon: "🦸",
+                tag: "BACK",
+                info: "Lie face down, arms extended forward. Simultaneously lift arms AND legs off the floor. Hold 2 seconds at the top. Lower slow. Builds your lower back which is weak with APT. You'll feel this tomorrow.",
+                rest: 30,
+              },
+            ],
+            cooldown: [
+              {
+                name: "Hip Flexor Stretch — Left",
+                type: "timed",
+                duration: 45,
+                icon: "🧘",
+                tag: "APT CRITICAL",
+                info: "Left knee down. Push hips forward. Breathe into it.",
+              },
+              {
+                name: "Hip Flexor Stretch — Right",
+                type: "timed",
+                duration: 45,
+                icon: "🧘",
+                tag: "APT CRITICAL",
+                info: "Right knee down. Same other side.",
+              },
+              {
+                name: "Cat-Cow Stretch",
+                type: "reps",
+                sets: 1,
+                reps: 10,
+                icon: "🐱",
+                tag: "SPINE",
+                info: "Slow and rhythmic. Breathe with each movement.",
+              },
+              {
+                name: "Child's Pose",
+                type: "timed",
+                duration: 60,
+                icon: "🙏",
+                tag: "RECOVERY",
+                info: "You did it. Rest here. Let your lower back breathe.",
+              },
+            ],
+          },
+        },
+        {
+          id: 3,
+          zone: 1,
+          title: "FOUNDATION SET",
+          xpToUnlock: 450,
+          unlockCondition: {
+            sessions: 0,
+            description: "Defeat Zone 1 Boss: THE ROOKIE GAUNTLET",
+          },
+          exercises: {
+            warmup: [
+              {
+                name: "Full Mobilization",
+                type: "timed",
+                duration: 90,
+                icon: "🔄",
+                info: "Neck → shoulders → wrists → hips → knees → ankles. 15 seconds each joint. You know the flow. Don't rush.",
+              },
+              {
+                name: "Jumping Jacks",
+                type: "reps",
+                sets: 1,
+                reps: 30,
+                icon: "⚡",
+                info: "Get that heart rate up properly. Controlled and rhythmic.",
+              },
+              {
+                name: "Arm Circles + Windmills",
+                type: "timed",
+                duration: 30,
+                icon: "🌀",
+                info: "Big forward circles → backward circles → opposite arm windmills. Warms up shoulder girdle.",
+              },
+            ],
+            main: [
+              {
+                name: "Knee → Full Push-Ups",
+                type: "reps",
+                sets: 3,
+                reps: 10,
+                icon: "💪",
+                tag: "STRENGTH GATE",
+                info: "Start with knee push-ups if needed. Target: full push-ups by end of this level. Body straight, chest touches floor, elbows at 45° — not flared. If you do knee push-ups, no shame — but push yourself to try full at the start of each set.",
+                rest: 60,
+              },
+              {
+                name: "Single Leg Glute Bridge",
+                type: "reps",
+                sets: 3,
+                reps: 8,
+                perSide: true,
+                icon: "🍑",
+                tag: "APT FIX ++",
+                info: "Extend one leg straight while bridging with the other. Much harder. Your weak side will be obvious — note it and work it more. 3-second hold at top.",
+                rest: 45,
+              },
+              {
+                name: "Dead Bug",
+                type: "reps",
+                sets: 3,
+                reps: 10,
+                perSide: true,
+                icon: "🐛",
+                tag: "CORE",
+                info: "3 seconds down, 1 second back up. Slow is hard. Hard is good.",
+                rest: 30,
+              },
+              {
+                name: "Squat with 2-sec Pause",
+                type: "reps",
+                sets: 3,
+                reps: 12,
+                icon: "🦵",
+                tag: "STRENGTH",
+                info: "Sit at the bottom for a full 2 seconds before coming up. No bouncing off the bottom. This builds real strength in the hard range where you're weakest.",
+                rest: 45,
+              },
+              {
+                name: "Plank Hold",
+                type: "timed",
+                duration: 40,
+                sets: 3,
+                icon: "🏋️",
+                tag: "CORE",
+                info: "40 seconds. Getting serious. If you fail, drop to knees to finish — don't just collapse and give up.",
+                rest: 60,
+              },
+              {
+                name: "Superman (3-sec Hold)",
+                type: "reps",
+                sets: 3,
+                reps: 10,
+                icon: "🦸",
+                tag: "BACK",
+                info: "3-second hold at the top. Feel your entire posterior chain working together — lower back, glutes, upper back. This is building your foundation.",
+                rest: 30,
+              },
+              {
+                name: "Bird Dog",
+                type: "reps",
+                sets: 3,
+                reps: 8,
+                perSide: true,
+                icon: "🐦",
+                tag: "BALANCE + APT",
+                info: "On all fours. Extend opposite arm and leg simultaneously. Hold 2 seconds. Keep hips LEVEL — don't rotate or shift. This is the best single exercise for APT and core stability combined.",
+                rest: 30,
+              },
+            ],
+            cooldown: [
+              {
+                name: "Hip Flexor Stretch — Left",
+                type: "timed",
+                duration: 45,
+                icon: "🧘",
+                tag: "APT CRITICAL",
+                info: "Deeper into the stretch than before. Breathe.",
+              },
+              {
+                name: "Hip Flexor Stretch — Right",
+                type: "timed",
+                duration: 45,
+                icon: "🧘",
+                tag: "APT CRITICAL",
+                info: "Other side. Equal time, equal depth.",
+              },
+              {
+                name: "Modified Pigeon Pose — Left",
+                type: "timed",
+                duration: 45,
+                icon: "🕊️",
+                tag: "HIP OPENER",
+                info: "From all fours, bring left knee forward behind your left wrist. Extend right leg back. Lean forward. Deep hip opener — significantly helps APT.",
+              },
+              {
+                name: "Modified Pigeon Pose — Right",
+                type: "timed",
+                duration: 45,
+                icon: "🕊️",
+                tag: "HIP OPENER",
+                info: "Other side. 45 seconds.",
+              },
+              {
+                name: "Cat-Cow Stretch",
+                type: "reps",
+                sets: 1,
+                reps: 10,
+                icon: "🐱",
+                tag: "SPINE",
+                info: "Slow. Deliberate. Feel your spine.",
+              },
+              {
+                name: "Child's Pose",
+                type: "timed",
+                duration: 60,
+                icon: "🙏",
+                tag: "RECOVERY",
+                info: "Zone 1 is almost complete. Rest and appreciate how far you've come.",
+              },
+            ],
+          },
+        },
+        // ── ZONE 2 ──
+        {
+          id: 4,
+          zone: 2,
+          title: "IRON INITIATE",
+          xpToUnlock: 700,
+          unlockCondition: {
+            sessions: 15,
+            description: "Complete 15 sessions at Level 3 + reach 700 XP",
+          },
+          exercises: {
+            warmup: [
+              {
+                name: "Inchworms",
+                type: "reps",
+                sets: 1,
+                reps: 5,
+                icon: "🐛",
+                info: "Stand, hinge forward and walk hands out to plank. Walk feet back to hands. Stand up. Warms up hamstrings, shoulders, core all at once.",
+              },
+              {
+                name: "Jumping Jacks",
+                type: "reps",
+                sets: 1,
+                reps: 30,
+                icon: "⚡",
+                info: "Full speed now. Get the heart rate up.",
+              },
+              {
+                name: "Hip Circles + Leg Swings",
+                type: "timed",
+                duration: 40,
+                icon: "🔄",
+                info: "Hip circles 20 sec, then leg swings front-back and side-to-side. 10 each direction each leg.",
+              },
+              {
+                name: "Deep Squat Hold",
+                type: "timed",
+                duration: 30,
+                icon: "🦵",
+                info: "Squat as deep as you can and hold. Hold wall if needed. Opens up hip flexors and ankles for the session.",
+              },
+            ],
+            main: [
+              {
+                name: "Full Push-Ups",
+                type: "reps",
+                sets: 4,
+                reps: 8,
+                icon: "💪",
+                tag: "STRENGTH",
+                info: "Full push-ups. No knee option from now. If you can't hit 8, do max + 5-second rest + continue until set is done. Perfect form always beats sloppy reps.",
+                rest: 60,
+              },
+              {
+                name: "Pike Push-Ups",
+                type: "reps",
+                sets: 3,
+                reps: 8,
+                icon: "🔺",
+                tag: "SHOULDERS",
+                info: "Start in downward dog (hips high, arms and legs straight). Bend elbows and lower the crown of your head toward the floor. Push back up. Works your shoulders like an overhead press. Hard but critical.",
+                rest: 60,
+              },
+              {
+                name: "Single Leg Glute Bridge (3-sec Hold)",
+                type: "reps",
+                sets: 4,
+                reps: 10,
+                perSide: true,
+                icon: "🍑",
+                tag: "APT",
+                info: "3-second hold at top now. Your glutes should be burning by rep 7. Good.",
+                rest: 45,
+              },
+              {
+                name: "Jump Squats",
+                type: "reps",
+                sets: 3,
+                reps: 8,
+                icon: "⚡",
+                tag: "POWER + STAMINA",
+                info: "Squat down then EXPLODE upward. Land soft with knees bent — absorb the landing. If this gasses you completely, rest 15 sec mid-set. That's fine. You'll adapt.",
+                rest: 60,
+              },
+              {
+                name: "Plank + Shoulder Taps",
+                type: "reps",
+                sets: 3,
+                reps: 8,
+                perSide: true,
+                icon: "🏋️",
+                tag: "CORE",
+                info: "Full plank position. Lift one hand, tap opposite shoulder. Keep hips completely still — don't rock or rotate. Slow and controlled. This is harder than it sounds.",
+                rest: 45,
+              },
+              {
+                name: "Reverse Lunges",
+                type: "reps",
+                sets: 3,
+                reps: 8,
+                perSide: true,
+                icon: "🦵",
+                tag: "LEGS",
+                info: "Step backward, lower back knee toward floor. Keep front shin vertical, don't let knee travel over toes. Keep torso upright. Step forward to return.",
+                rest: 45,
+              },
+              {
+                name: "Bird Dog (water bottle)",
+                type: "reps",
+                sets: 3,
+                reps: 10,
+                perSide: true,
+                icon: "🐦",
+                tag: "APT",
+                info: "Same bird dog but hold a water bottle in the extended hand. Small added resistance forces your stabilizers to work harder.",
+                rest: 30,
+              },
+            ],
+            cooldown: [
+              {
+                name: "Hip Flexor Stretch — Left",
+                type: "timed",
+                duration: 60,
+                icon: "🧘",
+                tag: "APT CRITICAL",
+                info: "Longer hold now. 60 seconds. Breathe deep into the hip.",
+              },
+              {
+                name: "Hip Flexor Stretch — Right",
+                type: "timed",
+                duration: 60,
+                icon: "🧘",
+                tag: "APT CRITICAL",
+                info: "60 seconds other side.",
+              },
+              {
+                name: "Pigeon Pose — Left",
+                type: "timed",
+                duration: 60,
+                icon: "🕊️",
+                tag: "HIP OPENER",
+                info: "Full minute in pigeon. Breathe into the tightness instead of fighting it.",
+              },
+              {
+                name: "Pigeon Pose — Right",
+                type: "timed",
+                duration: 60,
+                icon: "🕊️",
+                tag: "HIP OPENER",
+                info: "Other side. Equal time.",
+              },
+              {
+                name: "Thoracic Spine Rotation",
+                type: "reps",
+                sets: 1,
+                reps: 8,
+                perSide: true,
+                icon: "🌀",
+                tag: "UPPER BACK",
+                info: "Sit cross-legged, hands behind head, rotate upper body side to side. Opens your thoracic spine which stiffens from school posture.",
+              },
+              {
+                name: "Child's Pose",
+                type: "timed",
+                duration: 60,
+                icon: "🙏",
+                tag: "RECOVERY",
+                info: "Zone 2 initiated. Rest well. You need it.",
+              },
+            ],
+          },
+        },
+        {
+          id: 5,
+          zone: 2,
+          title: "IRON FORGED",
+          xpToUnlock: 1050,
+          unlockCondition: {
+            sessions: 15,
+            description: "Complete 15 sessions at Level 4 + reach 1050 XP",
+          },
+          exercises: {
+            warmup: [
+              {
+                name: "Inchworms",
+                type: "reps",
+                sets: 1,
+                reps: 6,
+                icon: "🐛",
+                info: "Walk it out. Full range.",
+              },
+              {
+                name: "Jumping Jacks",
+                type: "reps",
+                sets: 1,
+                reps: 40,
+                icon: "⚡",
+                info: "Fast. Get your heart pumping before the real work.",
+              },
+              {
+                name: "Hip + Shoulder Circuit",
+                type: "timed",
+                duration: 60,
+                icon: "🔄",
+                info: "30 sec hip circles + leg swings, then 30 sec arm circles + shoulder rolls. Full upper and lower prep.",
+              },
+            ],
+            main: [
+              {
+                name: "Push-Ups",
+                type: "reps",
+                sets: 4,
+                reps: 12,
+                icon: "💪",
+                tag: "STRENGTH",
+                info: "More volume. If form breaks before 12, stop the set there. Quality beats quantity always.",
+                rest: 60,
+              },
+              {
+                name: "Diamond Push-Ups",
+                type: "reps",
+                sets: 3,
+                reps: 6,
+                icon: "💎",
+                tag: "TRICEPS",
+                info: "Hands close together forming a diamond under your chest. Much harder than standard. Works triceps and inner chest. New movement — start easy and build. Elbows track backward, not outward.",
+                rest: 60,
+              },
+              {
+                name: "Glute Bridge with Backpack",
+                type: "reps",
+                sets: 4,
+                reps: 12,
+                icon: "🍑",
+                tag: "APT + RESISTANCE",
+                info: "Load a backpack with books or water bottles. Rest it on your hips during the bridge. First time adding resistance. Start light, increase over sessions.",
+                rest: 45,
+              },
+              {
+                name: "Jump Squats",
+                type: "reps",
+                sets: 3,
+                reps: 12,
+                icon: "⚡",
+                tag: "POWER",
+                info: "You've adapted. More reps, same explosion. Land soft always.",
+                rest: 60,
+              },
+              {
+                name: "Plank Up-Downs",
+                type: "reps",
+                sets: 3,
+                reps: 6,
+                perSide: true,
+                icon: "🏋️",
+                tag: "CORE + STRENGTH",
+                info: "Forearm plank → push up one hand at a time to full plank → lower back down one hand at a time. Keep hips level throughout. Alternate which hand leads each rep.",
+                rest: 60,
+              },
+              {
+                name: "Reverse Lunge + Knee Drive",
+                type: "reps",
+                sets: 3,
+                reps: 8,
+                perSide: true,
+                icon: "🦵",
+                tag: "LEGS + POWER",
+                info: "Lunge back, then as you come up drive the back knee forward and up aggressively. Balance challenge plus explosive power in one movement.",
+                rest: 45,
+              },
+            ],
+            cooldown: [
+              {
+                name: "Hip Flexor Stretch — Left",
+                type: "timed",
+                duration: 60,
+                icon: "🧘",
+                tag: "APT CRITICAL",
+                info: "Deep and sustained. 60 seconds.",
+              },
+              {
+                name: "Hip Flexor Stretch — Right",
+                type: "timed",
+                duration: 60,
+                icon: "🧘",
+                tag: "APT CRITICAL",
+                info: "Other side.",
+              },
+              {
+                name: "Pigeon Pose — Left",
+                type: "timed",
+                duration: 60,
+                icon: "🕊️",
+                tag: "HIP OPENER",
+                info: "Full minute.",
+              },
+              {
+                name: "Pigeon Pose — Right",
+                type: "timed",
+                duration: 60,
+                icon: "🕊️",
+                tag: "HIP OPENER",
+                info: "Other side.",
+              },
+              {
+                name: "Cat-Cow + Thoracic Rotation",
+                type: "reps",
+                sets: 1,
+                reps: 10,
+                icon: "🌀",
+                tag: "SPINE",
+                info: "10 cat-cows flowing into 5 thoracic rotations each side. Keep it fluid.",
+              },
+              {
+                name: "Child's Pose",
+                type: "timed",
+                duration: 60,
+                icon: "🙏",
+                tag: "RECOVERY",
+                info: "Rest. You're almost through Zone 2.",
+              },
+            ],
+          },
+        },
+        {
+          id: 6,
+          zone: 2,
+          title: "IRON COMPLETE",
+          xpToUnlock: 1500,
+          unlockCondition: {
+            sessions: 0,
+            description: "Defeat Zone 2 Boss: THE IRON TRIAL",
+          },
+          exercises: {
+            warmup: [
+              {
+                name: "Full Dynamic Warm-Up",
+                type: "timed",
+                duration: 120,
+                icon: "🔥",
+                info: "Inchworms (5) → Jumping jacks (30) → Hip circles → Leg swings → Deep squat hold (20 sec) → Arm circles. Flow through all without stopping.",
+              },
+            ],
+            main: [
+              {
+                name: "Push-Up Circuit",
+                type: "reps",
+                sets: 3,
+                reps: 15,
+                icon: "💪",
+                tag: "STRENGTH CIRCUIT",
+                info: "Each round: 5 standard → 5 wide → 5 diamond. No rest within a round. 90 seconds rest between rounds. 15 total reps per round.",
+                rest: 90,
+              },
+              {
+                name: "Pike Push-Ups",
+                type: "reps",
+                sets: 4,
+                reps: 10,
+                icon: "🔺",
+                tag: "SHOULDERS",
+                info: "Should feel noticeably stronger than Level 4. Try for more depth — lower forehead closer to floor each session.",
+                rest: 60,
+              },
+              {
+                name: "Bulgarian Split Squat",
+                type: "reps",
+                sets: 3,
+                reps: 8,
+                perSide: true,
+                icon: "🦵",
+                tag: "LEGS",
+                info: "Rear foot elevated on a chair. Front foot forward. Lower straight down — back knee toward floor, front shin stays vertical. This is one of the hardest bodyweight leg exercises. Take your time getting the setup right.",
+                rest: 75,
+              },
+              {
+                name: "Plank Variations",
+                type: "timed",
+                duration: 45,
+                sets: 3,
+                icon: "🏋️",
+                tag: "CORE",
+                info: "45 sec front plank → 30 sec right side plank → 30 sec left side plank. Side planks target obliques which standard plank completely misses.",
+                rest: 60,
+              },
+              {
+                name: "Mountain Climbers",
+                type: "reps",
+                sets: 3,
+                reps: 20,
+                icon: "🏔️",
+                tag: "STAMINA",
+                info: "In push-up position, drive knees to chest alternately as fast as controlled form allows. This gets your heart rate up seriously. A taste of what Zone 3 looks like.",
+                rest: 60,
+              },
+              {
+                name: "Dead Bug Progression",
+                type: "reps",
+                sets: 3,
+                reps: 12,
+                perSide: true,
+                icon: "🐛",
+                tag: "APT MASTER",
+                info: "You've been doing this since Level 1. This is your mastery set. 3 seconds down, 1 second pause at extension, 2 seconds back up. Perfect form. Every rep.",
+                rest: 30,
+              },
+            ],
+            cooldown: [
+              {
+                name: "Hip Flexor Stretch — Left",
+                type: "timed",
+                duration: 60,
+                icon: "🧘",
+                tag: "APT CRITICAL",
+                info: "60 seconds. You know why.",
+              },
+              {
+                name: "Hip Flexor Stretch — Right",
+                type: "timed",
+                duration: 60,
+                icon: "🧘",
+                tag: "APT CRITICAL",
+                info: "Other side.",
+              },
+              {
+                name: "Full Pigeon Pose — Left",
+                type: "timed",
+                duration: 90,
+                icon: "🕊️",
+                tag: "HIP OPENER",
+                info: "90 seconds now. Breathe into the tightness.",
+              },
+              {
+                name: "Full Pigeon Pose — Right",
+                type: "timed",
+                duration: 90,
+                icon: "🕊️",
+                tag: "HIP OPENER",
+                info: "Other side. 90 seconds.",
+              },
+              {
+                name: "Full Body Stretch Sequence",
+                type: "timed",
+                duration: 120,
+                icon: "🙏",
+                tag: "RECOVERY",
+                info: "Work through whatever feels tightest today — calves, hamstrings, chest, shoulders. Listen to your body. 2 full minutes.",
+              },
+            ],
+          },
+        },
+      ];
+
+      // ============================================================
+      // BOSS CHALLENGES
+      // ============================================================
+      FQ.BOSSES = [
+        {
+          id: "boss_z1",
+          zoneId: 1,
+          name: "THE ROOKIE GAUNTLET",
+          icon: "👹",
+          color: "#00d4ff",
+          desc: "Prove you've graduated from Rookie Grounds. Four tests. Rest 2 minutes between each.",
+          unlockRequirement: "Reach Level 2 and complete at least 8 sessions",
+          minSessions: 8,
+          minLevel: 2,
+          challenges: [
+            {
+              id: "z1c1",
+              name: "Full Push-Ups",
+              req: "10 consecutive, no breaks",
+              icon: "💪",
+              type: "reps",
+              target: 10,
+            },
+            {
+              id: "z1c2",
+              name: "Bodyweight Squats",
+              req: "30 consecutive reps",
+              icon: "🦵",
+              type: "reps",
+              target: 30,
+            },
+            {
+              id: "z1c3",
+              name: "Plank Hold",
+              req: "60 seconds non-stop",
+              icon: "🏋️",
+              type: "timed",
+              duration: 60,
+            },
+            {
+              id: "z1c4",
+              name: "Bird Dog",
+              req: "10 per side, no balance loss",
+              icon: "🐦",
+              type: "reps",
+              target: 10,
+            },
+          ],
+          xpReward: 150,
+          reward: "Unlock Level 3 → Zone 2 path + 150 Bonus XP",
+          unlocksMilestone: "Zone 2 path",
+        },
+        {
+          id: "boss_z2",
+          zoneId: 2,
+          name: "THE IRON TRIAL",
+          icon: "⚔️",
+          color: "#ff6b35",
+          desc: "Zone 2 finale. You've been forging iron. Time to prove it wasn't for nothing.",
+          unlockRequirement:
+            "Reach Level 5 and complete at least 25 sessions total",
+          minSessions: 25,
+          minLevel: 5,
+          challenges: [
+            {
+              id: "z2c1",
+              name: "Push-Up Endurance",
+              req: "20 consecutive full push-ups",
+              icon: "💪",
+              type: "reps",
+              target: 20,
+            },
+            {
+              id: "z2c2",
+              name: "Jump Squat Circuit",
+              req: "3×15 jump squats (30 sec rest between)",
+              icon: "⚡",
+              type: "reps",
+              target: 45,
+            },
+            {
+              id: "z2c3",
+              name: "Plank + Side Planks",
+              req: "60s front + 45s each side back-to-back",
+              icon: "🏋️",
+              type: "timed",
+              duration: 150,
+            },
+            {
+              id: "z2c4",
+              name: "Bulgarian Split Squat",
+              req: "10 reps each leg, no support",
+              icon: "🦵",
+              type: "reps",
+              target: 10,
+            },
+          ],
+          xpReward: 300,
+          reward: "Unlock Power Forge Zone + 300 Bonus XP",
+          unlocksMilestone: "Zone 3: Power Forge",
+        },
+      ];
+
+      // ============================================================
+      // DYNAMIC MISSIONS ENGINE
+      // Rules generate missions based on player state
+      // Each rule: { id, check(state) -> bool, mission: {title,desc,xp,icon} }
+      // ============================================================
+      FQ.MISSION_RULES = [
+        {
+          id: "streak_danger",
+          check: (s) =>
+            s.currentStreak >= 2 &&
+            !s.workoutHistory.some((w) => w.date === FQ.today()),
+          mission: {
+            icon: "🔥",
+            title: "Protect the Streak",
+            desc: `You're on a ${null} day streak. Don't break it today.`,
+            xp: 30,
+            dynamic: "streak",
+          },
+        },
+        {
+          id: "protein_gap",
+          check: (s) => {
+            const recent = s.nutritionLog.slice(-3);
+            const avg = recent.length
+              ? recent.reduce((a, b) => a + (b.protein || 0), 0) / recent.length
+              : 0;
+            return avg < 50;
+          },
+          mission: {
+            icon: "🥜",
+            title: "Protein Push",
+            desc: "Your last 3 days averaged under 50g protein. Hit 70g today.",
+            xp: 40,
+            targetNutrient: "protein",
+            targetAmount: 70,
+          },
+        },
+        {
+          id: "boss_available",
+          check: (s) => {
+            const boss = FQ.BOSSES.find(
+              (b) =>
+                b.zoneId === FQ.getCurrentLevel(s).zone &&
+                !s.bossCleared.includes(b.id),
+            );
+            return (
+              boss &&
+              s.sessionsCompleted >= boss.minSessions &&
+              s.currentLevel >= boss.minLevel
+            );
+          },
+          mission: {
+            icon: "👹",
+            title: "Boss Encounter Available",
+            desc: "You meet the unlock conditions. Head to the Boss tab and face it.",
+            xp: 0,
+            special: "boss",
+          },
+        },
+        {
+          id: "long_rest",
+          check: (s) => {
+            if (!s.lastWorkoutDate) return false;
+            const last = new Date(s.lastWorkoutDate);
+            const diff = (new Date() - last) / (1000 * 60 * 60 * 24);
+            return diff >= 2;
+          },
+          mission: {
+            icon: "⚡",
+            title: "Rest Ended. Move.",
+            desc: "You haven't trained in 2+ days. Get back on the mat today.",
+            xp: 25,
+            special: "workout",
+          },
+        },
+        {
+          id: "weekly_milestone",
+          check: (s) => {
+            const thisWeek = s.workoutHistory.filter((w) => {
+              const d = new Date(w.date);
+              const now = new Date();
+              const weekStart = new Date(now);
+              weekStart.setDate(now.getDate() - now.getDay());
+              return d >= weekStart;
+            }).length;
+            return thisWeek === 3;
+          },
+          mission: {
+            icon: "🏆",
+            title: "4th Session Bonus",
+            desc: "3 sessions done this week. Hit a 4th for a streak bonus.",
+            xp: 60,
+            special: "workout",
+          },
+        },
+        {
+          id: "hydration_miss",
+          check: (s) => {
+            const yesterday = FQ.yesterday();
+            const log = s.dailyLogs && s.dailyLogs[yesterday];
+            return log && (log.water || 0) < 5;
+          },
+          mission: {
+            icon: "💧",
+            title: "Hydration Recovery",
+            desc: "You drank under 5 glasses yesterday. Aim for 10 today.",
+            xp: 20,
+            targetWater: 10,
+          },
+        },
+        {
+          id: "perfect_week",
+          check: (s) => {
+            const now = new Date();
+            const dow = now.getDay();
+            if (dow < 5) return false;
+            const weekSessions = s.workoutHistory.filter((w) => {
+              const d = new Date(w.date);
+              const weekStart = new Date(now);
+              weekStart.setDate(now.getDate() - dow);
+              return d >= weekStart;
+            }).length;
+            return weekSessions >= 4;
+          },
+          mission: {
+            icon: "⭐",
+            title: "Perfect Week Attempt",
+            desc: "4+ sessions this week. Hit 5 for a perfect week badge.",
+            xp: 80,
+            special: "workout",
+          },
+        },
+        {
+          id: "level_up_close",
+          check: (s) => {
+            const next = FQ.LEVELS.find((l) => l.id === s.currentLevel + 1);
+            if (!next || !next.unlockCondition.sessions) return false;
+            const levelSessions = s.workoutHistory.filter(
+              (w) => w.level === s.currentLevel,
+            ).length;
+            return (
+              levelSessions >= next.unlockCondition.sessions - 2 &&
+              levelSessions < next.unlockCondition.sessions
+            );
+          },
+          mission: {
+            icon: "📈",
+            title: "Level-Up Incoming",
+            desc: "You're 1-2 sessions away from your next level. Push now.",
+            xp: 35,
+            special: "workout",
+          },
+        },
+        {
+          id: "calorie_surplus",
+          check: (s) => {
+            const recent = s.nutritionLog.slice(-2);
+            const avg = recent.length
+              ? recent.reduce((a, b) => a + (b.calories || 0), 0) /
+                recent.length
+              : 0;
+            return avg < 1800;
+          },
+          mission: {
+            icon: "🍽️",
+            title: "Calorie Deficit Alert",
+            desc: "Recent logs show under 1800 kcal. Eat more — you need fuel to build muscle.",
+            xp: 30,
+            targetNutrient: "calories",
+            targetAmount: 2000,
+          },
+        },
+      ];
+
+      // ============================================================
+      // FOOD DATABASE — Indian Vegetarian Focus
+      // Nutrients per 100g unless noted
+      // ============================================================
+      FQ.FOODS = [
+        // DAIRY
+        {
+          id: "milk_glass",
+          name: "Milk (1 glass ~240ml)",
+          category: "Dairy",
+          serving: 240,
+          unit: "ml",
+          calories: 149,
+          protein: 7.7,
+          carbs: 11.7,
+          fat: 8,
+          fiber: 0,
+          calcium: 276,
+          iron: 0.1,
+        },
+        {
+          id: "paneer_100",
+          name: "Paneer",
+          category: "Dairy",
+          serving: 100,
+          unit: "g",
+          calories: 265,
+          protein: 18,
+          carbs: 1.2,
+          fat: 20,
+          fiber: 0,
+          calcium: 480,
+          iron: 0.3,
+        },
+        {
+          id: "curd_100",
+          name: "Curd / Dahi",
+          category: "Dairy",
+          serving: 100,
+          unit: "g",
+          calories: 60,
+          protein: 3.5,
+          carbs: 4,
+          fat: 3.2,
+          fiber: 0,
+          calcium: 120,
+          iron: 0.1,
+        },
+
+        // LEGUMES & PULSES
+        {
+          id: "chana_cooked",
+          name: "Chickpeas / Chana (cooked)",
+          category: "Legumes",
+          serving: 100,
+          unit: "g",
+          calories: 164,
+          protein: 8.9,
+          carbs: 27,
+          fat: 2.6,
+          fiber: 7.6,
+          calcium: 49,
+          iron: 2.9,
+        },
+        {
+          id: "moong_sprouts",
+          name: "Moong Sprouts",
+          category: "Legumes",
+          serving: 100,
+          unit: "g",
+          calories: 30,
+          protein: 3.0,
+          carbs: 5.9,
+          fat: 0.2,
+          fiber: 1.8,
+          calcium: 13,
+          iron: 0.9,
+        },
+        {
+          id: "yellow_dal",
+          name: "Yellow Dal (cooked, 1 bowl)",
+          category: "Legumes",
+          serving: 200,
+          unit: "g",
+          calories: 198,
+          protein: 13.8,
+          carbs: 33,
+          fat: 0.8,
+          fiber: 7.8,
+          calcium: 72,
+          iron: 3.8,
+        },
+        {
+          id: "rajma_cooked",
+          name: "Rajma / Kidney Beans (cooked)",
+          category: "Legumes",
+          serving: 100,
+          unit: "g",
+          calories: 127,
+          protein: 8.7,
+          carbs: 22.8,
+          fat: 0.5,
+          fiber: 6.4,
+          calcium: 50,
+          iron: 2.2,
+        },
+        {
+          id: "soya_chunks",
+          name: "Soya Chunks (dry)",
+          category: "Legumes",
+          serving: 50,
+          unit: "g",
+          calories: 178,
+          protein: 26,
+          carbs: 17,
+          fat: 0.5,
+          fiber: 4.2,
+          calcium: 76,
+          iron: 5.0,
+        },
+
+        // GRAINS
+        {
+          id: "chapati",
+          name: "Chapati (1 medium)",
+          category: "Grains",
+          serving: 40,
+          unit: "g",
+          calories: 120,
+          protein: 3.1,
+          carbs: 24,
+          fat: 1.2,
+          fiber: 2.2,
+          calcium: 18,
+          iron: 1.1,
+        },
+        {
+          id: "rice_cooked",
+          name: "Rice (cooked, 1 cup)",
+          category: "Grains",
+          serving: 186,
+          unit: "g",
+          calories: 242,
+          protein: 4.4,
+          carbs: 53,
+          fat: 0.4,
+          fiber: 0.6,
+          calcium: 16,
+          iron: 1.2,
+        },
+        {
+          id: "oats_bowl",
+          name: "Oats (cooked, 1 bowl)",
+          category: "Grains",
+          serving: 234,
+          unit: "g",
+          calories: 166,
+          protein: 5.9,
+          carbs: 28,
+          fat: 3.6,
+          fiber: 4.0,
+          calcium: 21,
+          iron: 2.1,
+        },
+
+        // NUTS & SEEDS
+        {
+          id: "peanuts_30",
+          name: "Peanuts (1 handful ~30g)",
+          category: "Nuts",
+          serving: 30,
+          unit: "g",
+          calories: 171,
+          protein: 7.8,
+          carbs: 4.5,
+          fat: 14.7,
+          fiber: 2.3,
+          calcium: 19,
+          iron: 0.6,
+        },
+        {
+          id: "peanut_butter",
+          name: "Peanut Butter (1 tbsp)",
+          category: "Nuts",
+          serving: 16,
+          unit: "g",
+          calories: 94,
+          protein: 4.0,
+          carbs: 3.1,
+          fat: 8.0,
+          fiber: 0.9,
+          calcium: 7,
+          iron: 0.3,
+        },
+
+        // VEGETABLES (common in your meals)
+        {
+          id: "potato_med",
+          name: "Potato (1 medium)",
+          category: "Vegetables",
+          serving: 150,
+          unit: "g",
+          calories: 116,
+          protein: 3.1,
+          carbs: 26,
+          fat: 0.2,
+          fiber: 2.2,
+          calcium: 12,
+          iron: 0.8,
+        },
+        {
+          id: "tomato",
+          name: "Tomato (1 medium)",
+          category: "Vegetables",
+          serving: 120,
+          unit: "g",
+          calories: 22,
+          protein: 1.1,
+          carbs: 4.8,
+          fat: 0.2,
+          fiber: 1.5,
+          calcium: 10,
+          iron: 0.3,
+        },
+        {
+          id: "cauliflower",
+          name: "Cauliflower sabzi (1 portion)",
+          category: "Vegetables",
+          serving: 150,
+          unit: "g",
+          calories: 48,
+          protein: 3.7,
+          carbs: 9,
+          fat: 0.6,
+          fiber: 3.5,
+          calcium: 35,
+          iron: 0.9,
+        },
+        {
+          id: "ladyfinger",
+          name: "Lady Finger / Bhindi sabzi (1 portion)",
+          category: "Vegetables",
+          serving: 150,
+          unit: "g",
+          calories: 55,
+          protein: 2.9,
+          carbs: 12,
+          fat: 0.4,
+          fiber: 4.5,
+          calcium: 82,
+          iron: 0.7,
+        },
+        {
+          id: "cabbage",
+          name: "Cabbage sabzi (1 portion)",
+          category: "Vegetables",
+          serving: 150,
+          unit: "g",
+          calories: 37,
+          protein: 1.9,
+          carbs: 8.7,
+          fat: 0.1,
+          fiber: 2.8,
+          calcium: 60,
+          iron: 0.7,
+        },
+        {
+          id: "fenugreek",
+          name: "Methi / Fenugreek (1 portion)",
+          category: "Vegetables",
+          serving: 150,
+          unit: "g",
+          calories: 45,
+          protein: 4.4,
+          carbs: 5.8,
+          fat: 0.9,
+          fiber: 4.7,
+          calcium: 176,
+          iron: 5.7,
+        },
+
+        // SNACKS (your actual snacks)
+        {
+          id: "chana_chaat",
+          name: "Chana Chaat (1 bowl)",
+          category: "Snacks",
+          serving: 200,
+          unit: "g",
+          calories: 210,
+          protein: 12,
+          carbs: 35,
+          fat: 3.5,
+          fiber: 9,
+          calcium: 72,
+          iron: 3.5,
+        },
+        {
+          id: "roasted_chana",
+          name: "Roasted Chana (1 handful)",
+          category: "Snacks",
+          serving: 30,
+          unit: "g",
+          calories: 110,
+          protein: 7.5,
+          carbs: 17,
+          fat: 2,
+          fiber: 5,
+          calcium: 27,
+          iron: 1.3,
+        },
+        {
+          id: "bhel",
+          name: "Bhel Puri (1 bowl)",
+          category: "Snacks",
+          serving: 150,
+          unit: "g",
+          calories: 182,
+          protein: 3.5,
+          carbs: 36,
+          fat: 3.2,
+          fiber: 2.1,
+          calcium: 23,
+          iron: 1.5,
+        },
+        {
+          id: "maggi",
+          name: "Maggi (1 pack cooked)",
+          category: "Snacks",
+          serving: 80,
+          unit: "g",
+          calories: 312,
+          protein: 7.3,
+          carbs: 44,
+          fat: 12,
+          fiber: 1.4,
+          calcium: 18,
+          iron: 2.1,
+        },
+        {
+          id: "chiwda",
+          name: "Chiwda (1 handful)",
+          category: "Snacks",
+          serving: 40,
+          unit: "g",
+          calories: 172,
+          protein: 3.5,
+          carbs: 23,
+          fat: 7.5,
+          fiber: 1.8,
+          calcium: 15,
+          iron: 1.1,
+        },
+
+        // PROTEIN SPECIALS
+        {
+          id: "egg_whole",
+          name: "Egg (1 whole)",
+          category: "Protein",
+          serving: 50,
+          unit: "g",
+          calories: 78,
+          protein: 6.3,
+          carbs: 0.6,
+          fat: 5.3,
+          fiber: 0,
+          calcium: 28,
+          iron: 0.9,
+        },
+      ];
+
+      // ============================================================
+      // NUTRITION TARGETS (daily, for a 15-yr-old growing male, ~190cm)
+      // ============================================================
+      FQ.NUTRITION_TARGETS = {
+        calories: { min: 2200, ideal: 2700, unit: "kcal" },
+        protein: { min: 70, ideal: 90, unit: "g" },
+        carbs: { min: 250, ideal: 350, unit: "g" },
+        fat: { min: 50, ideal: 80, unit: "g" },
+        fiber: { min: 25, ideal: 35, unit: "g" },
+        calcium: { min: 1000, ideal: 1300, unit: "mg" },
+        iron: { min: 11, ideal: 15, unit: "mg" },
+      };
+
+      // ============================================================
+      // UTILITY FUNCTIONS
+      // ============================================================
+      FQ.today = () => new Date().toISOString().split("T")[0];
+      FQ.yesterday = () => {
+        const d = new Date();
+        d.setDate(d.getDate() - 1);
+        return d.toISOString().split("T")[0];
+      };
+      FQ.getCurrentLevel = (state) =>
+        FQ.LEVELS.find((l) => l.id === (state.currentLevel || 1)) ||
+        FQ.LEVELS[0];
+      FQ.getCurrentZone = (state) =>
+        FQ.ZONES.find((z) => z.id === FQ.getCurrentLevel(state).zone) ||
+        FQ.ZONES[0];
+
+      FQ.generateMissions = (state) => {
+        const missions = [];
+        for (const rule of FQ.MISSION_RULES) {
+          try {
+            if (rule.check(state)) {
+              const m = { ...rule.mission, id: rule.id };
+              if (m.dynamic === "streak")
+                m.desc = `You're on a ${state.currentStreak}-day streak. Don't break it today.`;
+              missions.push(m);
+            }
+          } catch (e) {}
+          if (missions.length >= 3) break;
+        }
+        if (missions.length === 0) {
+          missions.push({
+            id: "default",
+            icon: "🎯",
+            title: "Stay Consistent",
+            desc: "No special mission today. Just train, eat well, and sleep.",
+            xp: 20,
+          });
+        }
+        return missions;
+      };
+
+      FQ.getTodayNutrition = (state) => {
+        const today = FQ.today();
+        const log =
+          (state.dailyLogs &&
+            state.dailyLogs[today] &&
+            state.dailyLogs[today].food) ||
+          [];
+        const totals = {
+          calories: 0,
+          protein: 0,
+          carbs: 0,
+          fat: 0,
+          fiber: 0,
+          calcium: 0,
+          iron: 0,
+        };
+        log.forEach((entry) => {
+          const food = FQ.FOODS.find((f) => f.id === entry.foodId);
+          if (!food) return;
+          const ratio = entry.qty / food.serving;
+          Object.keys(totals).forEach((k) => {
+            totals[k] += (food[k] || 0) * ratio;
+          });
+        });
+        return totals;
+      };
+
+      FQ.getTodayWater = (state) => {
+        const today = FQ.today();
+        return (
+          (state.dailyLogs &&
+            state.dailyLogs[today] &&
+            state.dailyLogs[today].water) ||
+          0
+        );
+      };
+
+      // Build full workout sequence (flat array of steps with rests)
+      FQ.buildWorkoutSequence = (levelData) => {
+        const steps = [];
+        const phases = [
+          { key: "warmup", label: "WARM UP", color: "#ff9500" },
+          { key: "main", label: "MAIN WORK", color: "#00d4ff" },
+          { key: "cooldown", label: "COOL DOWN", color: "#a855f7" },
+        ];
+        phases.forEach((phase) => {
+          const exs = levelData.exercises[phase.key] || [];
+          steps.push({
+            type: "phase_header",
+            phase: phase.label,
+            color: phase.color,
+          });
+          exs.forEach((ex, idx) => {
+            if (ex.type === "timed") {
+              const sets = ex.sets || 1;
+              for (let s = 0; s < sets; s++) {
+                steps.push({
+                  type: "exercise_timed",
+                  name: ex.name,
+                  duration: ex.duration,
+                  icon: ex.icon,
+                  tag: ex.tag || "",
+                  info: ex.info,
+                  set: sets > 1 ? s + 1 : 0,
+                  totalSets: sets,
+                });
+                if (ex.rest && s < sets - 1)
+                  steps.push({
+                    type: "rest",
+                    duration: ex.rest,
+                    afterExercise: ex.name,
+                  });
+              }
+            } else {
+              // reps-based
+              const sets = ex.sets || 1;
+              for (let s = 0; s < sets; s++) {
+                steps.push({
+                  type: "exercise_reps",
+                  name: ex.name,
+                  reps: ex.reps,
+                  perSide: ex.perSide || false,
+                  icon: ex.icon,
+                  tag: ex.tag || "",
+                  info: ex.info,
+                  set: s + 1,
+                  totalSets: sets,
+                });
+                if (ex.rest && s < sets - 1)
+                  steps.push({
+                    type: "rest",
+                    duration: ex.rest,
+                    afterExercise: ex.name,
+                  });
+              }
+              if (ex.rest && idx < exs.length - 1)
+                steps.push({
+                  type: "rest",
+                  duration: ex.rest || 30,
+                  afterExercise: ex.name,
+                });
+            }
+          });
+        });
+        return steps;
+      };
+    </script>
+    <script>
+      // ============================================================
+      // FITQUEST v2 — STATE MANAGEMENT
+      // ============================================================
+
+      const STATE_KEY = "fitquest_v2_state";
+
+      const DEFAULT_STATE = {
+        name: "",
+        currentLevel: 1,
+        xp: 0,
+        sessionsCompleted: 0,
+        currentStreak: 0,
+        bestStreak: 0,
+        totalMissionsDone: 0,
+        lastWorkoutDate: null,
+        workoutHistory: [], // [{date, level, xp, durationSec}]
+        nutritionLog: [], // [{date, protein, calories, carbs, fat, fiber, calcium, iron}] — daily totals
+        dailyLogs: {}, // {date: {food:[{foodId, qty, name}], water: N, missionsDone: []}}
+        bossProgress: {}, // {challengeId: bool}
+        bossAttempts: {}, // {bossId: [timestamp]}
+        bossCleared: [], // [bossId]
+        missionState: {}, // {date: [{id, completed, claimedXp}]}
+        customFoods: [], // user-added foods
+        weightLog: [], // [{date, weight}]
+        heightLog: [], // [{date, height}]
+      };
+
+      const S = {
+        _state: null,
+
+        get() {
+          if (!S._state) S.load();
+          return S._state;
+        },
+
+        load() {
+          try {
+            const raw = localStorage.getItem(STATE_KEY);
+            S._state = raw
+              ? { ...DEFAULT_STATE, ...JSON.parse(raw) }
+              : { ...DEFAULT_STATE };
+          } catch (e) {
+            S._state = { ...DEFAULT_STATE };
+          }
+        },
+
+        save() {
+          localStorage.setItem(STATE_KEY, JSON.stringify(S._state));
+        },
+
+        reset() {
+          S._state = { ...DEFAULT_STATE };
+          S.save();
+        },
+
+        // ── Computed helpers ──
+        todayLog() {
+          const today = FQ.today();
+          if (!S._state.dailyLogs[today]) {
+            S._state.dailyLogs[today] = {
+              food: [],
+              water: 0,
+              missionsDone: [],
+            };
+          }
+          return S._state.dailyLogs[today];
+        },
+
+        todayNutrition() {
+          return FQ.getTodayNutrition(S._state);
+        },
+        todayWater() {
+          return FQ.getTodayWater(S._state);
+        },
+        currentLevel() {
+          return FQ.getCurrentLevel(S._state);
+        },
+        currentZone() {
+          return FQ.getCurrentZone(S._state);
+        },
+
+        levelSessionCount(levelId) {
+          return S._state.workoutHistory.filter((w) => w.level === levelId)
+            .length;
+        },
+
+        // ── Mutations ──
+        addXP(amount) {
+          S._state.xp += amount;
+          S.save();
+          checkLevelUp();
+          UI.updateTopBar();
+        },
+
+        completeWorkout() {
+          const today = FQ.today();
+          if (S._state.lastWorkoutDate === today) return false; // already done today
+
+          const level = S.currentLevel();
+          S._state.sessionsCompleted++;
+          S._state.workoutHistory.push({
+            date: today,
+            level: level.id,
+            xp: 80,
+          });
+
+          // Streak
+          const yest = FQ.yesterday();
+          if (S._state.lastWorkoutDate === yest) {
+            S._state.currentStreak++;
+          } else if (S._state.lastWorkoutDate !== today) {
+            S._state.currentStreak = 1;
+          }
+          if (S._state.currentStreak > S._state.bestStreak) {
+            S._state.bestStreak = S._state.currentStreak;
+          }
+          S._state.lastWorkoutDate = today;
+          S.addXP(80);
+          S.save();
+          checkLevelUp();
+          return true;
+        },
+
+        logFood(foodId, qty) {
+          const log = S.todayLog();
+          const food = [...FQ.FOODS, ...S._state.customFoods].find(
+            (f) => f.id === foodId,
+          );
+          if (!food) return;
+          const existing = log.food.findIndex((f) => f.foodId === foodId);
+          if (existing >= 0) {
+            log.food[existing].qty += qty;
+          } else {
+            log.food.push({ foodId, qty, name: food.name });
+          }
+          // Update nutrition log for today
+          S._refreshTodayNutritionLog();
+          S.save();
+        },
+
+        removeFood(index) {
+          const log = S.todayLog();
+          log.food.splice(index, 1);
+          S._refreshTodayNutritionLog();
+          S.save();
+        },
+
+        setWater(n) {
+          S.todayLog().water = n;
+          S.save();
+        },
+
+        _refreshTodayNutritionLog() {
+          const today = FQ.today();
+          const totals = FQ.getTodayNutrition(S._state);
+          const existing = S._state.nutritionLog.findIndex(
+            (n) => n.date === today,
+          );
+          const entry = { date: today, ...totals };
+          if (existing >= 0) S._state.nutritionLog[existing] = entry;
+          else S._state.nutritionLog.push(entry);
+        },
+
+        completeMission(missionId, xp) {
+          const today = FQ.today();
+          if (!S._state.missionState[today]) S._state.missionState[today] = [];
+          const already = S._state.missionState[today].find(
+            (m) => m.id === missionId,
+          );
+          if (already) return false;
+          S._state.missionState[today].push({ id: missionId, completed: true });
+          S._state.totalMissionsDone++;
+          S.addXP(xp);
+          S.save();
+          return true;
+        },
+
+        isMissionDone(missionId) {
+          const today = FQ.today();
+          return !!(
+            S._state.missionState[today] &&
+            S._state.missionState[today].find((m) => m.id === missionId)
+          );
+        },
+
+        toggleBossChallenge(challengeId) {
+          S._state.bossProgress[challengeId] =
+            !S._state.bossProgress[challengeId];
+          S.save();
+        },
+
+        clearBoss(bossId, xpReward) {
+          if (!S._state.bossCleared.includes(bossId)) {
+            S._state.bossCleared.push(bossId);
+            S.addXP(xpReward);
+            S.save();
+          }
+        },
+
+        isBossAvailable(boss) {
+          if (S._state.bossCleared.includes(boss.id)) return false;
+          return (
+            S._state.sessionsCompleted >= boss.minSessions &&
+            S._state.currentLevel >= boss.minLevel
+          );
+        },
+
+        addCustomFood(food) {
+          food.id = "custom_" + Date.now();
+          S._state.customFoods.push(food);
+          S.save();
+          return food.id;
+        },
+
+        logWeight(w) {
+          const today = FQ.today();
+          const ex = S._state.weightLog.findIndex((x) => x.date === today);
+          if (ex >= 0) S._state.weightLog[ex].weight = w;
+          else S._state.weightLog.push({ date: today, weight: w });
+          S.save();
+        },
+
+        hasWorkoutToday() {
+          return S._state.lastWorkoutDate === FQ.today();
+        },
+
+        getAllFoods() {
+          return [...FQ.FOODS, ...S._state.customFoods];
+        },
+
+        getRecentNutrition(days = 7) {
+          const result = [];
+          for (let i = days - 1; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().split("T")[0];
+            const log = S._state.nutritionLog.find((n) => n.date === dateStr);
+            result.push({
+              date: dateStr,
+              ...(log || {
+                calories: 0,
+                protein: 0,
+                carbs: 0,
+                fat: 0,
+                fiber: 0,
+                calcium: 0,
+                iron: 0,
+              }),
+            });
+          }
+          return result;
+        },
+
+        getHeatmapData(days = 56) {
+          const result = [];
+          for (let i = days - 1; i >= 0; i--) {
+            const d = new Date();
+            d.setDate(d.getDate() - i);
+            const dateStr = d.toISOString().split("T")[0];
+            const workout = S._state.workoutHistory.find(
+              (w) => w.date === dateStr,
+            );
+            result.push({
+              date: dateStr,
+              xp: workout ? workout.xp || 80 : 0,
+              hasWorkout: !!workout,
+            });
+          }
+          return result;
+        },
+      };
+
+      // ── Level up checker (called after XP changes or session completion) ──
+      function checkLevelUp() {
+        const state = S._state;
+        const currentLevelData = FQ.getCurrentLevel(state);
+        const nextLevel = FQ.LEVELS.find(
+          (l) => l.id === state.currentLevel + 1,
+        );
+        if (!nextLevel) return;
+
+        const levelSessions = S.levelSessionCount(state.currentLevel);
+        const condSessions = currentLevelData.unlockCondition.sessions;
+        const xpMet = state.xp >= nextLevel.xpToUnlock;
+
+        // Session-based unlock
+        if (condSessions > 0 && levelSessions >= condSessions && xpMet) {
+          _triggerLevelUp(nextLevel);
+          return;
+        }
+
+        // Boss-based unlock (sessions = 0)
+        if (condSessions === 0) {
+          const boss = FQ.BOSSES.find(
+            (b) => b.zoneId === currentLevelData.zone,
+          );
+          if (boss && state.bossCleared.includes(boss.id) && xpMet) {
+            _triggerLevelUp(nextLevel);
+          }
+        }
+      }
+
+      function _triggerLevelUp(newLevel) {
+        if (S._state.currentLevel >= newLevel.id) return; // already at or past this level
+        S._state.currentLevel = newLevel.id;
+        S.save();
+        UI.showLevelUp(newLevel);
+        UI.renderHome();
+        UI.renderWorkoutScreen();
+      }
+    </script>
+    <script>
+      // ============================================================
+      // FITQUEST v2 — UI MODULE
+      // ============================================================
+      const UI = {
+        _toastTimer: null,
+
+        toast(msg, type = "default") {
+          const t = document.getElementById("toast");
+          t.textContent = msg;
+          t.className = "show" + (type !== "default" ? " toast-" + type : "");
+          clearTimeout(UI._toastTimer);
+          UI._toastTimer = setTimeout(() => t.classList.remove("show"), 2600);
+        },
+
+        openModal(id) {
+          document.getElementById(id).classList.add("show");
+        },
+        closeModal(id) {
+          document.getElementById(id).classList.remove("show");
+        },
+
+        switchScreen(name) {
+          document
+            .querySelectorAll(".screen")
+            .forEach((s) => s.classList.remove("active"));
+          document
+            .querySelectorAll(".nav-btn")
+            .forEach((b) => b.classList.remove("active"));
+          document.getElementById("screen-" + name).classList.add("active");
+          document.getElementById("nav-" + name).classList.add("active");
+          if (name === "stats") Stats.render();
+          if (name === "boss") UI.renderBoss();
+          if (name === "nutrition") Nutrition.render();
+          if (name === "workout") UI.renderWorkoutScreen();
+          if (name === "home") UI.renderHome();
+        },
+
+        updateTopBar() {
+          const s = S.get();
+          document.getElementById("topbar-xp").textContent =
+            "⚡ " + s.xp + " XP";
+          document.getElementById("topbar-level").textContent =
+            "LVL " + s.currentLevel;
+        },
+
+        // ── HOME ──
+        renderHome() {
+          const s = S.get();
+          const lv = S.currentLevel();
+          const zone = S.currentZone();
+          const nextLv = FQ.LEVELS.find((l) => l.id === s.currentLevel + 1);
+
+          document.getElementById("h-zone-chip").textContent =
+            "ZONE " + zone.id;
+          document.getElementById("h-zone-name").textContent = zone.name;
+          document.getElementById("h-lvl-num").textContent = lv.id;
+          document.getElementById("h-lvl-title").textContent = lv.title;
+          document.getElementById("h-lvl-sub").textContent =
+            `Zone ${zone.id} · Level ${lv.id}`;
+
+          const curXP = lv.xpToUnlock;
+          const nextXP = nextLv ? nextLv.xpToUnlock : curXP + 300;
+          const pct = Math.min(
+            100,
+            Math.max(0, ((s.xp - curXP) / (nextXP - curXP)) * 100),
+          );
+          document.getElementById("h-xp-fill").style.width = pct + "%";
+          document.getElementById("h-xp-text").textContent =
+            `${s.xp} / ${nextXP} XP`;
+
+          UI.renderStreak();
+          UI.renderMissions();
+          UI.updateTopBar();
+
+          const done = S.hasWorkoutToday();
+          document.getElementById("h-start-btn").style.display = done
+            ? "none"
+            : "flex";
+          document.getElementById("h-done-msg").style.display = done
+            ? "block"
+            : "none";
+        },
+
+        renderStreak() {
+          const s = S.get();
+          const days = ["M", "T", "W", "T", "F", "S", "S"];
+          const today = new Date().getDay(); // 0=Sun
+          const bar = document.getElementById("h-streak-days");
+          bar.innerHTML = "";
+          for (let i = 0; i < 7; i++) {
+            const dayOfWeek = i === 6 ? 0 : i + 1; // Mon=1..Sun=0
+            const daysAgo = (today === 0 ? 7 : today) - (i + 1);
+            const d = new Date();
+            d.setDate(d.getDate() - daysAgo);
+            const dateStr = d.toISOString().split("T")[0];
+            const isToday = dateStr === FQ.today();
+            const hasWorkout = s.workoutHistory.some((w) => w.date === dateStr);
+            const pip = document.createElement("div");
+            pip.className =
+              "streak-pip" +
+              (hasWorkout
+                ? " done"
+                : isToday && !hasWorkout
+                  ? " today-empty"
+                  : "");
+            pip.textContent = hasWorkout ? "✓" : days[i];
+            bar.appendChild(pip);
+          }
+          document.getElementById("h-streak-count").textContent =
+            s.currentStreak + " days 🔥";
+        },
+
+        renderMissions() {
+          const s = S.get();
+          const missions = FQ.generateMissions(s);
+          const list = document.getElementById("h-missions-list");
+          list.innerHTML = "";
+          missions.forEach((m) => {
+            const done = S.isMissionDone(m.id);
+            const div = document.createElement("div");
+            div.className = "mission-card";
+            div.innerHTML = `
+        <div class="mission-icon">${m.icon}</div>
+        <div class="mission-body">
+          <div class="mission-title">${m.title}</div>
+          <div class="mission-desc">${m.desc}</div>
+        </div>
+        ${m.xp > 0 ? `<div class="mission-xp">+${m.xp}</div>` : ""}
+        <div class="mission-done-btn ${done ? "done" : ""}" onclick="UI.toggleMission('${m.id}',${m.xp})">${done ? "✓" : ""}</div>
+      `;
+            list.appendChild(div);
+          });
+        },
+
+        toggleMission(id, xp) {
+          if (S.isMissionDone(id)) {
+            UI.toast("Already claimed!");
+            return;
+          }
+          const ok = S.completeMission(id, xp);
+          if (ok) {
+            UI.toast(`+${xp} XP — Mission complete! 🎯`, "gold");
+            UI.renderMissions();
+            UI.updateTopBar();
+          }
+        },
+
+        // ── WORKOUT SCREEN ──
+        renderWorkoutScreen() {
+          const lv = S.currentLevel();
+          const w = document.getElementById("w-badges");
+          w.innerHTML = `<span class="badge badge-cyan">${S.currentZone().name}</span><span class="badge badge-gold" style="margin-left:4px;">LVL ${lv.id} — ${lv.title}</span>`;
+
+          const done = S.hasWorkoutToday();
+          document.getElementById("w-start-btn").style.display = done
+            ? "none"
+            : "flex";
+          document.getElementById("w-done-msg").style.display = done
+            ? "block"
+            : "none";
+
+          const container = document.getElementById("workout-phases");
+          container.innerHTML = "";
+          const phases = [
+            {
+              key: "warmup",
+              label: "WARM UP",
+              icon: "🔥",
+              color: "#ff9500",
+              time: "3 MIN",
+            },
+            {
+              key: "main",
+              label: "MAIN WORK",
+              icon: "⚡",
+              color: "#00c8f0",
+              time: "14 MIN",
+            },
+            {
+              key: "cooldown",
+              label: "COOL DOWN + APT",
+              icon: "🧘",
+              color: "#a855f7",
+              time: "3 MIN",
+            },
+          ];
+          phases.forEach((p) => {
+            const exs = lv.exercises[p.key] || [];
+            const block = document.createElement("div");
+            block.className = "phase-block";
+            block.innerHTML = `
+        <div class="phase-header">
+          <span style="font-size:18px;">${p.icon}</span>
+          <span class="phase-name" style="color:${p.color};">${p.label}</span>
+          <span class="phase-time">${p.time}</span>
+        </div>
+        ${exs
+          .map(
+            (ex, i) => `
+          <div class="ex-row" onclick="UI.showExModal(${lv.id},'${p.key}',${i})">
+            <div class="ex-num">${i + 1}</div>
+            <div class="ex-body">
+              <div class="ex-name">${ex.icon} ${ex.name}</div>
+              <div class="ex-sets">${
+                ex.type === "timed"
+                  ? (ex.sets ? ex.sets + " × " : "") + ex.duration + "s"
+                  : ex.sets +
+                    " × " +
+                    ex.reps +
+                    (ex.perSide ? "/side" : "") +
+                    " reps"
+              }</div>
+              ${ex.tag ? `<div class="ex-tag">${ex.tag}</div>` : ""}
+            </div>
+            <div class="ex-arrow">›</div>
+          </div>
+        `,
+          )
+          .join("")}
+      `;
+            container.appendChild(block);
+          });
+        },
+
+        showExModal(levelId, phase, idx) {
+          const lv = FQ.LEVELS.find((l) => l.id === levelId);
+          const ex = lv.exercises[phase][idx];
+          document.getElementById("ex-modal-title").textContent = ex.name;
+          const sets =
+            ex.type === "timed"
+              ? (ex.sets ? ex.sets + " sets × " : "") + ex.duration + " seconds"
+              : ex.sets +
+                " sets × " +
+                ex.reps +
+                (ex.perSide ? " per side" : "") +
+                " reps";
+          document.getElementById("ex-modal-body").innerHTML = `
+      <div style="text-align:center;font-size:52px;margin-bottom:12px;">${ex.icon}</div>
+      ${ex.tag ? `<div style="text-align:center;margin-bottom:14px;"><span class="badge badge-cyan">${ex.tag}</span></div>` : ""}
+      <div style="background:var(--bg3);border-radius:10px;padding:13px;margin-bottom:14px;">
+        <div style="font-family:var(--font-mono);font-size:10px;color:var(--text-dim);letter-spacing:2px;margin-bottom:5px;">PRESCRIPTION</div>
+        <div style="font-family:var(--font-mono);font-size:15px;color:var(--gold);">${sets}</div>
+      </div>
+      ${ex.info ? `<div style="font-family:var(--font-hud);font-size:10px;color:var(--text-dim);letter-spacing:2px;margin-bottom:8px;">TRAINER NOTES</div><div class="note">${ex.info}</div>` : ""}
+      ${ex.rest ? `<div style="margin-top:12px;font-family:var(--font-mono);font-size:12px;color:var(--purple);">REST: ${ex.rest}s between sets</div>` : ""}
+    `;
+          UI.openModal("ex-modal");
+        },
+
+        // ── BOSS ──
+        renderBoss() {
+          const s = S.get();
+          const container = document.getElementById("boss-content");
+          container.innerHTML = "";
+
+          const zone = S.currentZone();
+          const boss = FQ.BOSSES.find((b) => b.zoneId === zone.id);
+
+          if (!boss) {
+            container.innerHTML = `<div class="boss-locked">No boss challenge in this zone yet. Keep progressing. 💪</div>`;
+            return;
+          }
+
+          const available = S.isBossAvailable(boss);
+          const cleared = s.bossCleared.includes(boss.id);
+
+          if (cleared) {
+            container.innerHTML = `
+        <div style="text-align:center;padding:40px 24px;">
+          <div style="font-size:64px;margin-bottom:16px;">🏆</div>
+          <div class="font-hud" style="font-size:18px;color:var(--green);letter-spacing:2px;">BOSS DEFEATED</div>
+          <div style="font-size:14px;color:var(--text-dim);margin-top:8px;">${boss.name}</div>
+          <div style="margin-top:16px;" class="badge badge-gold">+${boss.xpReward} XP CLAIMED</div>
+        </div>
+      `;
+            return;
+          }
+
+          if (!available) {
+            container.innerHTML = `
+        <div class="boss-locked">
+          <div style="font-size:56px;margin-bottom:16px;opacity:0.3;">👹</div>
+          <div class="font-hud" style="font-size:16px;color:var(--text-dim);letter-spacing:2px;margin-bottom:12px;">${boss.name}</div>
+          <div>🔒 BOSS LOCKED</div>
+          <div style="margin-top:12px;font-size:13px;">${boss.unlockRequirement}</div>
+          <div style="margin-top:8px;font-size:12px;color:var(--text-dim);">
+            Sessions: ${s.sessionsCompleted}/${boss.minSessions} &nbsp;|&nbsp; Level: ${s.currentLevel}/${boss.minLevel}
+          </div>
+        </div>
+      `;
+            return;
+          }
+
+          const allDone = boss.challenges.every((c) => s.bossProgress[c.id]);
+
+          container.innerHTML = `
+      <div class="boss-card">
+        <div class="boss-icon">${boss.icon}</div>
+        <div class="boss-name">${boss.name}</div>
+        <div class="boss-desc">${boss.desc}</div>
+      </div>
+      <div style="margin:0 14px;">
+        <div class="section-label" style="padding:10px 0 8px;">CHALLENGES — TICK WHEN COMPLETED</div>
+        ${boss.challenges
+          .map(
+            (c) => `
+          <div class="boss-challenge-row">
+            <div class="bc-icon">${c.icon}</div>
+            <div class="bc-body">
+              <div class="bc-name">${c.name}</div>
+              <div class="bc-req">${c.req}</div>
+            </div>
+            <div class="bc-check ${s.bossProgress[c.id] ? "done" : ""}" onclick="UI.toggleBossChallenge('${c.id}','${boss.id}')">
+              ${s.bossProgress[c.id] ? "✓" : ""}
+            </div>
+          </div>
+        `,
+          )
+          .join("")}
+      </div>
+      <div class="boss-reward-box">
+        <div style="font-family:var(--font-hud);font-size:10px;color:var(--gold);letter-spacing:2px;margin-bottom:6px;">VICTORY REWARD</div>
+        <div style="font-size:13px;color:var(--text);">${boss.reward}</div>
+      </div>
+      ${allDone ? `<div class="px-14 mb-16"><button class="btn btn-gold btn-block" onclick="UI.claimBossVictory('${boss.id}',${boss.xpReward})">⚔️ CLAIM VICTORY</button></div>` : ""}
+    `;
+        },
+
+        toggleBossChallenge(challengeId, bossId) {
+          const s = S.get();
+          if (s.bossCleared.includes(bossId)) return;
+          S.toggleBossChallenge(challengeId);
+          UI.renderBoss();
+        },
+
+        claimBossVictory(bossId, xpReward) {
+          S.clearBoss(bossId, xpReward);
+          const boss = FQ.BOSSES.find((b) => b.id === bossId);
+          document.getElementById("lu-icon").textContent = "👹";
+          document.getElementById("lu-name").textContent = "BOSS DEFEATED!";
+          document.getElementById("lu-subtitle").textContent = boss.name;
+          document.getElementById("lu-rewards").innerHTML = `
+      <div class="lu-reward">⚔️ Zone ${boss.zoneId} Boss Cleared!</div>
+      <div class="lu-reward">+${xpReward} Bonus XP</div>
+      <div class="lu-reward" style="font-size:13px;">${boss.unlocksMilestone}</div>
+    `;
+          document.getElementById("levelup-screen").classList.add("show");
+          checkLevelUp();
+          UI.renderBoss();
+          UI.renderHome();
+        },
+
+        // ── LEVEL UP OVERLAY ──
+        showLevelUp(newLevel) {
+          document.getElementById("lu-icon").textContent = "🏆";
+          document.getElementById("lu-name").textContent =
+            `LEVEL ${newLevel.id}`;
+          document.getElementById("lu-subtitle").textContent = newLevel.title;
+          document.getElementById("lu-rewards").innerHTML = `
+      <div class="lu-reward">🌟 ${FQ.ZONES.find((z) => z.id === newLevel.zone).name}</div>
+      <div class="lu-reward">⚡ New exercises unlocked</div>
+      <div class="lu-reward" style="font-size:13px;">${newLevel.unlockCondition.description}</div>
+    `;
+          document.getElementById("levelup-screen").classList.add("show");
+        },
+      };
+
+      function App() {}
+      App.closeLevelUp = function () {
+        document.getElementById("levelup-screen").classList.remove("show");
+        UI.renderHome();
+        UI.renderWorkoutScreen();
+      };
+    </script>
+    <script>
+      // ============================================================
+      // FITQUEST v2 — GUIDED WORKOUT ENGINE
+      // ============================================================
+      const GW = {
+        _steps: [],
+        _currentStep: 0,
+        _timer: null,
+        _timerSec: 0,
+        _running: false,
+        _autoAdvanceTimeout: null,
+
+        start() {
+          if (S.hasWorkoutToday()) {
+            UI.toast("Workout already complete today! Rest up. 💤", "green");
+            return;
+          }
+          const lv = S.currentLevel();
+          GW._steps = FQ.buildWorkoutSequence(lv);
+          GW._currentStep = 0;
+          GW._running = false;
+          clearInterval(GW._timer);
+          clearTimeout(GW._autoAdvanceTimeout);
+          document.getElementById("guided-workout").classList.add("show");
+          GW._renderStep();
+        },
+
+        confirmQuit() {
+          clearInterval(GW._timer);
+          clearTimeout(GW._autoAdvanceTimeout);
+          GW._running = false;
+          // Render inline to avoid z-index issues with modal overlays
+          document.getElementById("gw-body").innerHTML = `
+      <div style="text-align:center;padding:20px;">
+        <div style="font-size:60px;margin-bottom:16px;">⚠️</div>
+        <div style="font-family:var(--font-hud);font-size:18px;color:var(--red);letter-spacing:2px;margin-bottom:12px;">QUIT WORKOUT?</div>
+        <div style="font-size:14px;color:var(--text);line-height:1.7;max-width:280px;margin:0 auto;">No XP for incomplete sessions. All progress this session is lost.</div>
+      </div>
+    `;
+          document.getElementById("gw-footer").innerHTML = `
+      <button class="btn btn-danger" style="flex:1;" onclick="GW.quit()">QUIT — NO XP</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="GW._resume()">KEEP GOING</button>
+    `;
+        },
+
+        _resume() {
+          GW._renderStep();
+        },
+
+        quit() {
+          clearInterval(GW._timer);
+          clearTimeout(GW._autoAdvanceTimeout);
+          GW._running = false;
+          document.getElementById("guided-workout").classList.remove("show");
+          UI.renderHome();
+        },
+
+        _renderStep() {
+          const step = GW._steps[GW._currentStep];
+          const total = GW._steps.length;
+          const pct = (GW._currentStep / total) * 100;
+          document.getElementById("gw-prog-fill").style.width = pct + "%";
+          document.getElementById("gw-step-label").textContent =
+            GW._currentStep + 1 + "/" + total;
+
+          const body = document.getElementById("gw-body");
+          const footer = document.getElementById("gw-footer");
+
+          if (!step) {
+            GW._finish();
+            return;
+          }
+
+          if (step.type === "phase_header") {
+            body.innerHTML = `
+        <div class="gw-phase-card">
+          <div class="gw-phase-icon">${GW._phaseIcon(step.phase)}</div>
+          <div class="gw-phase-label" style="color:${step.color};">${step.phase}</div>
+          <div class="gw-phase-sub">Get ready for the next phase</div>
+        </div>
+      `;
+            footer.innerHTML = `<button class="btn btn-primary" style="flex:1;" onclick="GW._next()">START ${step.phase} →</button>`;
+            return;
+          }
+
+          if (step.type === "rest") {
+            GW._renderRest(step);
+            return;
+          }
+
+          if (step.type === "exercise_timed") {
+            GW._renderTimedEx(step);
+            return;
+          }
+
+          if (step.type === "exercise_reps") {
+            GW._renderRepsEx(step);
+            return;
+          }
+        },
+
+        _phaseIcon(phase) {
+          if (phase.includes("WARM")) return "🔥";
+          if (phase.includes("MAIN")) return "⚡";
+          return "🧘";
+        },
+
+        _renderTimedEx(step) {
+          const body = document.getElementById("gw-body");
+          const setLabel =
+            step.totalSets > 1 ? `SET ${step.set} OF ${step.totalSets}` : "";
+
+          body.innerHTML = `
+      <div class="gw-ex-icon">${step.icon}</div>
+      <div class="gw-ex-name">${step.name}</div>
+      ${step.tag ? `<div class="gw-ex-tag-line"><span class="badge badge-cyan">${step.tag}</span></div>` : ""}
+      ${setLabel ? `<div class="gw-ex-set">${setLabel}</div>` : ""}
+      <div class="gw-timer" id="gw-timer-display">${step.duration}</div>
+      <div class="gw-info-box">${step.info || ""}</div>
+    `;
+
+          GW._renderTimedFooter(step.duration);
+          GW._startCountdown(step.duration, () => GW._next());
+        },
+
+        _renderTimedFooter(dur) {
+          const footer = document.getElementById("gw-footer");
+          footer.innerHTML = `
+      <button class="gw-skip" onclick="GW._next()">SKIP →</button>
+      <button class="btn btn-primary" style="flex:1;" id="gw-pause-btn" onclick="GW._togglePause()">⏸ PAUSE</button>
+    `;
+        },
+
+        _renderRepsEx(step) {
+          const body = document.getElementById("gw-body");
+          const setLabel = `SET ${step.set} OF ${step.totalSets}`;
+          const repsLabel = step.perSide
+            ? `${step.reps} reps EACH SIDE`
+            : `${step.reps} REPS`;
+
+          body.innerHTML = `
+      <div class="gw-ex-icon">${step.icon}</div>
+      <div class="gw-ex-name">${step.name}</div>
+      ${step.tag ? `<div class="gw-ex-tag-line"><span class="badge badge-cyan">${step.tag}</span></div>` : ""}
+      <div class="gw-ex-set">${setLabel}</div>
+      <div class="gw-reps-display">${step.reps}${step.perSide ? "/side" : ""}</div>
+      <div class="gw-reps-label">${repsLabel}</div>
+      <div class="gw-info-box">${step.info || ""}</div>
+    `;
+
+          const footer = document.getElementById("gw-footer");
+          footer.innerHTML = `
+      <button class="gw-skip" onclick="GW._next()">SKIP →</button>
+      <button class="btn btn-primary" style="flex:1;" onclick="GW._next()">✓ DONE — NEXT</button>
+    `;
+        },
+
+        _renderRest(step) {
+          const body = document.getElementById("gw-body");
+          body.innerHTML = `
+      <div class="gw-rest-card">
+        <div style="font-size:48px;margin-bottom:12px;">😤</div>
+        <div class="gw-rest-label">REST</div>
+        <div class="gw-rest-timer" id="gw-timer-display">${step.duration}</div>
+        <div class="gw-rest-sub">After: ${step.afterExercise}</div>
+      </div>
+    `;
+          GW._renderTimedFooter(step.duration);
+          document.getElementById("gw-pause-btn").textContent = "⏸ PAUSE";
+          GW._startCountdown(step.duration, () => GW._next());
+        },
+
+        _startCountdown(seconds, onDone) {
+          clearInterval(GW._timer);
+          clearTimeout(GW._autoAdvanceTimeout);
+          GW._timerSec = seconds;
+          GW._running = true;
+
+          GW._timer = setInterval(() => {
+            if (!GW._running) return;
+            GW._timerSec--;
+            const el = document.getElementById("gw-timer-display");
+            if (el) {
+              el.textContent = Math.max(0, GW._timerSec);
+              if (GW._timerSec <= 5 && GW._timerSec > 0)
+                el.classList.add("warning");
+              else el.classList.remove("warning");
+            }
+            if (GW._timerSec <= 0) {
+              clearInterval(GW._timer);
+              GW._running = false;
+              if (el) {
+                el.textContent = "✓";
+                el.classList.add("done-color");
+                el.classList.remove("warning");
+              }
+              GW._autoAdvanceTimeout = setTimeout(() => onDone(), 1200);
+            }
+          }, 1000);
+        },
+
+        _togglePause() {
+          GW._running = !GW._running;
+          const btn = document.getElementById("gw-pause-btn");
+          if (btn) btn.textContent = GW._running ? "⏸ PAUSE" : "▶ RESUME";
+        },
+
+        _next() {
+          clearInterval(GW._timer);
+          clearTimeout(GW._autoAdvanceTimeout);
+          GW._running = false;
+          GW._currentStep++;
+          if (GW._currentStep >= GW._steps.length) {
+            GW._finish();
+          } else {
+            GW._renderStep();
+          }
+        },
+
+        _finish() {
+          clearInterval(GW._timer);
+          clearTimeout(GW._autoAdvanceTimeout);
+          GW._running = false;
+
+          document.getElementById("guided-workout").classList.remove("show");
+
+          const ok = S.completeWorkout();
+          if (ok) {
+            const s = S.get();
+            document.getElementById("lu-icon").textContent = "🔥";
+            document.getElementById("lu-name").textContent =
+              "SESSION COMPLETE!";
+            document.getElementById("lu-subtitle").textContent =
+              `Streak: ${s.currentStreak} days`;
+            document.getElementById("lu-rewards").innerHTML = `
+        <div class="lu-reward">+80 XP earned</div>
+        <div class="lu-reward">💪 ${s.sessionsCompleted} total sessions</div>
+        <div class="lu-reward" style="font-size:13px;">Rest, eat protein, sleep 7+ hours.</div>
+      `;
+            document.getElementById("levelup-screen").classList.add("show");
+            UI.renderHome();
+            UI.renderWorkoutScreen();
+            checkLevelUp();
+          } else {
+            UI.toast("Already logged today!", "green");
+          }
+        },
+      };
+    </script>
+    <script>
+      // ============================================================
+      // FITQUEST v2 — NUTRITION MODULE
+      // ============================================================
+      const Nutrition = {
+        _pendingFoodId: null,
+
+        render() {
+          Nutrition.renderNutrientBars();
+          Nutrition.renderWater();
+          Nutrition.renderFoodLog();
+        },
+
+        renderNutrientBars() {
+          const totals = S.todayNutrition();
+          const targets = FQ.NUTRITION_TARGETS;
+          const container = document.getElementById("nutrient-bars");
+          const nutrients = [
+            {
+              key: "calories",
+              name: "Calories",
+              color: "#f5c400",
+              emoji: "🔥",
+            },
+            { key: "protein", name: "Protein", color: "#00c8f0", emoji: "💪" },
+            { key: "carbs", name: "Carbs", color: "#a855f7", emoji: "🍞" },
+            { key: "fat", name: "Fat", color: "#ff6b2b", emoji: "🥑" },
+            { key: "fiber", name: "Fiber", color: "#22c55e", emoji: "🌿" },
+            { key: "calcium", name: "Calcium", color: "#e879f9", emoji: "🦴" },
+            { key: "iron", name: "Iron", color: "#f87171", emoji: "⚙️" },
+          ];
+
+          container.innerHTML = nutrients
+            .map((n) => {
+              const val = Math.round(totals[n.key] || 0);
+              const t = targets[n.key];
+              const minPct = Math.min(100, (val / t.ideal) * 100);
+              const statusColor =
+                val >= t.ideal
+                  ? "#22c55e"
+                  : val >= t.min
+                    ? "#f5c400"
+                    : "#ef4444";
+              return `
+        <div class="nutrient-row">
+          <div class="nutrient-header">
+            <span class="nutrient-name">${n.emoji} ${n.name}</span>
+            <span class="nutrient-val" style="color:${statusColor}">${val}${t.unit}</span>
+          </div>
+          <div class="pbar pbar-lg">
+            <div class="pbar-fill" style="width:${minPct}%;background:${n.color};box-shadow:0 0 6px ${n.color}40;"></div>
+          </div>
+          <div class="nutrient-targets">
+            <span>Min: ${t.min}${t.unit}</span>
+            <span>Ideal: ${t.ideal}${t.unit}</span>
+          </div>
+        </div>
+      `;
+            })
+            .join("");
+        },
+
+        renderWater() {
+          const w = S.todayWater();
+          document.getElementById("water-count").textContent = w;
+          const bubbles = document.getElementById("water-bubbles");
+          bubbles.innerHTML = "";
+          for (let i = 1; i <= w; i++) {
+            const b = document.createElement("div");
+            b.className = "water-bubble filled";
+            b.textContent = "💧";
+            b.onclick = () => {
+              S.setWater(i - 1);
+              Nutrition.renderWater();
+            };
+            bubbles.appendChild(b);
+          }
+        },
+
+        addWater() {
+          S.setWater(S.todayWater() + 1);
+          Nutrition.renderWater();
+          const w = S.todayWater();
+          if (w === 8)
+            UI.toast("8 glasses reached! Excellent hydration! 💧", "green");
+        },
+
+        removeWater() {
+          const w = S.todayWater();
+          if (w > 0) {
+            S.setWater(w - 1);
+            Nutrition.renderWater();
+          }
+        },
+
+        renderFoodLog() {
+          const log = S.todayLog().food;
+          const list = document.getElementById("food-log-list");
+          const empty = document.getElementById("food-log-empty");
+          list.innerHTML = "";
+          if (log.length === 0) {
+            empty.style.display = "block";
+            return;
+          }
+          empty.style.display = "none";
+
+          const allFoods = S.getAllFoods();
+          log.forEach((entry, i) => {
+            const food = allFoods.find((f) => f.id === entry.foodId);
+            if (!food) return;
+            const ratio = entry.qty / food.serving;
+            const cal = Math.round((food.calories || 0) * ratio);
+            const prot = Math.round((food.protein || 0) * ratio * 10) / 10;
+
+            const row = document.createElement("div");
+            row.className = "food-logged-row";
+            row.innerHTML = `
+        <div style="flex:1;">
+          <div class="flr-name">${food.name}</div>
+          <div class="flr-qty">${entry.qty}${food.unit} · ${prot}g protein</div>
+        </div>
+        <div class="flr-cal">${cal} kcal</div>
+        <div class="flr-del" onclick="Nutrition.removeFood(${i})">×</div>
+      `;
+            list.appendChild(row);
+          });
+        },
+
+        removeFood(index) {
+          S.removeFood(index);
+          Nutrition.render();
+          UI.toast("Food removed", "default");
+        },
+
+        openFoodModal() {
+          document.getElementById("food-search").value = "";
+          Nutrition.searchFoods("");
+          UI.openModal("food-modal");
+        },
+
+        searchFoods(query) {
+          const all = S.getAllFoods();
+          const q = query.toLowerCase().trim();
+          const results = q
+            ? all.filter((f) => f.name.toLowerCase().includes(q))
+            : all;
+          const container = document.getElementById("food-search-results");
+          if (results.length === 0) {
+            container.innerHTML =
+              '<div style="padding:16px;text-align:center;color:var(--text-dim);font-size:13px;">No foods found. Add a custom food.</div>';
+            return;
+          }
+
+          // Group by category
+          const grouped = {};
+          results.forEach((f) => {
+            if (!grouped[f.category]) grouped[f.category] = [];
+            grouped[f.category].push(f);
+          });
+
+          container.innerHTML = Object.entries(grouped)
+            .map(
+              ([cat, foods]) => `
+      <div style="padding:8px 14px 4px;font-family:var(--font-mono);font-size:10px;color:var(--text-dim);letter-spacing:1px;background:var(--bg3);">${cat.toUpperCase()}</div>
+      ${foods
+        .map(
+          (f) => `
+        <div class="food-result" onclick="Nutrition.selectFood('${f.id}')">
+          <div>
+            <div class="food-result-name">${f.name}</div>
+            <div class="food-result-meta">${f.serving}${f.unit} · ${f.calories}kcal · ${f.carbs}g carbs</div>
+          </div>
+          <div class="food-result-protein">${f.protein}g</div>
+        </div>
+      `,
+        )
+        .join("")}
+    `,
+            )
+            .join("");
+        },
+
+        selectFood(foodId) {
+          UI.closeModal("food-modal");
+          const food = S.getAllFoods().find((f) => f.id === foodId);
+          if (!food) return;
+          Nutrition._pendingFoodId = foodId;
+          document.getElementById("qty-modal-title").textContent = food.name;
+          document.getElementById("qty-unit-label").textContent =
+            `QUANTITY (${food.unit})`;
+          document.getElementById("qty-input").value = food.serving;
+          document.getElementById("qty-input").placeholder = food.serving;
+          document.getElementById("qty-modal-food-preview").innerHTML = `
+      <div style="font-weight:700;font-size:14px;color:var(--text-bright);margin-bottom:8px;">${food.name}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-family:var(--font-mono);font-size:11px;">
+        <div style="text-align:center;"><div style="color:var(--gold);font-size:16px;">${food.calories}</div><div style="color:var(--text-dim);">kcal</div></div>
+        <div style="text-align:center;"><div style="color:var(--accent);font-size:16px;">${food.protein}g</div><div style="color:var(--text-dim);">protein</div></div>
+        <div style="text-align:center;"><div style="color:var(--purple);font-size:16px;">${food.carbs}g</div><div style="color:var(--text-dim);">carbs</div></div>
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:6px;text-align:center;">Per ${food.serving}${food.unit}</div>
+    `;
+          UI.openModal("qty-modal");
+        },
+
+        confirmAddFood() {
+          const qty = parseFloat(document.getElementById("qty-input").value);
+          if (!qty || qty <= 0) {
+            UI.toast("Enter a valid quantity!");
+            return;
+          }
+          S.logFood(Nutrition._pendingFoodId, qty);
+          UI.closeModal("qty-modal");
+          Nutrition.render();
+          const food = S.getAllFoods().find(
+            (f) => f.id === Nutrition._pendingFoodId,
+          );
+          UI.toast(`${food.name} logged ✓`, "green");
+        },
+
+        openAddCustom() {
+          [
+            "cf-name",
+            "cf-serving",
+            "cf-cal",
+            "cf-protein",
+            "cf-carbs",
+            "cf-fat",
+            "cf-fiber",
+            "cf-calcium",
+          ].forEach((id) => {
+            document.getElementById(id).value = "";
+          });
+          UI.openModal("custom-food-modal");
+        },
+
+        saveCustomFood() {
+          const name = document.getElementById("cf-name").value.trim();
+          const serving =
+            parseFloat(document.getElementById("cf-serving").value) || 100;
+          if (!name) {
+            UI.toast("Enter food name!");
+            return;
+          }
+          const food = {
+            name,
+            serving,
+            unit: "g",
+            category: "Custom",
+            calories: parseFloat(document.getElementById("cf-cal").value) || 0,
+            protein:
+              parseFloat(document.getElementById("cf-protein").value) || 0,
+            carbs: parseFloat(document.getElementById("cf-carbs").value) || 0,
+            fat: parseFloat(document.getElementById("cf-fat").value) || 0,
+            fiber: parseFloat(document.getElementById("cf-fiber").value) || 0,
+            calcium:
+              parseFloat(document.getElementById("cf-calcium").value) || 0,
+            iron: 0,
+          };
+          S.addCustomFood(food);
+          UI.closeModal("custom-food-modal");
+          UI.toast(`${name} added to your food list ✓`, "green");
+        },
+      };
+    </script>
+    <script>
+      // ============================================================
+      // FITQUEST v2 — STATS MODULE (Full Visualization Suite)
+      // ============================================================
+      const Stats = {
+        _activeNutrient: "protein",
+
+        render() {
+          const s = S.get();
+          document.getElementById("st-sessions").textContent =
+            s.sessionsCompleted;
+          document.getElementById("st-xp").textContent = s.xp;
+          document.getElementById("st-streak").textContent = s.bestStreak;
+          document.getElementById("st-missions").textContent =
+            s.totalMissionsDone;
+          Stats.renderHeatmap();
+          Stats.renderNutrientChart(Stats._activeNutrient);
+          Stats.renderXPTimeline();
+          Stats.renderSessionsPerWeek();
+          Stats.renderNutrientRadar();
+          Stats.renderLevelProgress();
+          Stats.renderRoadmap();
+          Stats.prefillBMI();
+        },
+
+        _canvas(id) {
+          const canvas = document.getElementById(id);
+          if (!canvas) return null;
+          const wrap = canvas.parentElement;
+          const dpr = window.devicePixelRatio || 1;
+          const W = wrap.offsetWidth || 300;
+          const H = parseInt(canvas.dataset.h || "160");
+          canvas.width = W * dpr;
+          canvas.height = H * dpr;
+          canvas.style.width = W + "px";
+          canvas.style.height = H + "px";
+          const ctx = canvas.getContext("2d");
+          ctx.scale(dpr, dpr);
+          ctx.clearRect(0, 0, W, H);
+          return { ctx, W, H };
+        },
+
+        _gridLines(ctx, W, H, pad, steps) {
+          steps = steps || 4;
+          ctx.strokeStyle = "rgba(26,45,74,0.7)";
+          ctx.lineWidth = 0.5;
+          for (let i = 0; i <= steps; i++) {
+            const y = pad.t + ((H - pad.t - pad.b) / steps) * i;
+            ctx.beginPath();
+            ctx.moveTo(pad.l, y);
+            ctx.lineTo(W - pad.r, y);
+            ctx.stroke();
+          }
+        },
+
+        _yLabels(ctx, W, H, pad, maxVal) {
+          ctx.fillStyle = "rgba(61,90,122,0.9)";
+          ctx.font = "10px Share Tech Mono";
+          ctx.textAlign = "right";
+          [0, 0.5, 1].forEach((f) => {
+            const y = pad.t + (H - pad.t - pad.b) * (1 - f);
+            const v = maxVal * f;
+            ctx.fillText(
+              v >= 1000 ? (v / 1000).toFixed(1) + "k" : Math.round(v),
+              pad.l - 4,
+              y + 4,
+            );
+          });
+        },
+
+        _refLine(ctx, val, maxVal, W, H, pad, color, label) {
+          if (val <= 0 || val > maxVal) return;
+          const chartH = H - pad.t - pad.b;
+          const y = pad.t + chartH * (1 - val / maxVal);
+          ctx.save();
+          ctx.strokeStyle = color;
+          ctx.lineWidth = 1;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(pad.l, y);
+          ctx.lineTo(W - pad.r, y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          if (label) {
+            ctx.fillStyle = color;
+            ctx.font = "9px Share Tech Mono";
+            ctx.textAlign = "left";
+            ctx.fillText(label, pad.l + 4, y - 3);
+          }
+          ctx.restore();
+        },
+
+        _bar(ctx, x, y, w, h, color, rounded) {
+          if (rounded && ctx.roundRect) {
+            ctx.beginPath();
+            ctx.roundRect(x, y, w, h, [3, 3, 0, 0]);
+          } else {
+            ctx.beginPath();
+            ctx.rect(x, y, w, h);
+          }
+          const grad = ctx.createLinearGradient(x, y, x, y + h);
+          grad.addColorStop(0, color + "cc");
+          grad.addColorStop(1, color + "22");
+          ctx.fillStyle = grad;
+          ctx.fill();
+        },
+
+        // ── 1. HEATMAP ──
+        renderHeatmap() {
+          const data = S.getHeatmapData(56);
+          const today = FQ.today();
+          const grid = document.getElementById("heatmap-grid");
+          grid.innerHTML = "";
+          data.forEach((d) => {
+            const cell = document.createElement("div");
+            let cls = "hm-cell";
+            if (d.xp >= 160) cls += " xp-max";
+            else if (d.xp >= 100) cls += " xp-high";
+            else if (d.xp >= 50) cls += " xp-med";
+            else if (d.xp > 0) cls += " xp-low";
+            if (d.date === today) cls += " today-cell";
+            cell.className = cls;
+            cell.title = d.date + (d.xp ? " · +" + d.xp + " XP" : " · rest");
+            grid.appendChild(cell);
+          });
+        },
+
+        // ── 2. NUTRITION BAR CHART ──
+        setNutrientChart(nutrient) {
+          Stats._activeNutrient = nutrient;
+          ["protein", "calories", "carbs", "fat", "fiber"].forEach((k) => {
+            const btn = document.getElementById("nc-" + k);
+            if (btn)
+              btn.className =
+                "btn btn-sm " + (k === nutrient ? "btn-primary" : "btn-ghost");
+          });
+          Stats.renderNutrientChart(nutrient);
+        },
+
+        renderNutrientChart(nutrient) {
+          const r = Stats._canvas("nutrition-chart");
+          if (!r) return;
+          const { ctx, W, H } = r;
+          const data = S.getRecentNutrition(7);
+          const target = FQ.NUTRITION_TARGETS[nutrient];
+          const pad = { t: 18, r: 10, b: 28, l: 40 };
+          const chartH = H - pad.t - pad.b;
+          const vals = data.map((d) => d[nutrient] || 0);
+          const maxVal = Math.max(target.ideal * 1.3, ...vals, 1);
+          const clrs = {
+            protein: "#00c8f0",
+            calories: "#f5c400",
+            carbs: "#a855f7",
+            fat: "#ff6b2b",
+            fiber: "#22c55e",
+            calcium: "#e879f9",
+            iron: "#f87171",
+          };
+          const color = clrs[nutrient] || "#00c8f0";
+          const gap = (W - pad.l - pad.r) / 7;
+          const bw = gap * 0.58;
+          const days = ["M", "T", "W", "T", "F", "S", "S"];
+
+          Stats._gridLines(ctx, W, H, pad);
+          Stats._refLine(
+            ctx,
+            target.min,
+            maxVal,
+            W,
+            H,
+            pad,
+            "rgba(239,68,68,0.5)",
+            "min",
+          );
+          Stats._refLine(
+            ctx,
+            target.ideal,
+            maxVal,
+            W,
+            H,
+            pad,
+            "rgba(34,197,94,0.5)",
+            "ideal",
+          );
+          Stats._yLabels(ctx, W, H, pad, maxVal);
+
+          data.forEach((d, i) => {
+            const x = pad.l + i * gap + (gap - bw) / 2;
+            const bh = Math.max(2, (vals[i] / maxVal) * chartH);
+            const y = pad.t + chartH - bh;
+            const isToday = d.date === FQ.today();
+            Stats._bar(ctx, x, y, bw, bh, color, true);
+            if (isToday) {
+              ctx.strokeStyle = color;
+              ctx.lineWidth = 1.5;
+              ctx.strokeRect(x - 1, y - 1, bw + 2, bh + 1);
+            }
+            if (vals[i] > 0) {
+              ctx.fillStyle = color;
+              ctx.font = "9px Share Tech Mono";
+              ctx.textAlign = "center";
+              ctx.fillText(
+                vals[i] > 999
+                  ? (vals[i] / 1000).toFixed(1) + "k"
+                  : Math.round(vals[i]),
+                x + bw / 2,
+                y - 3,
+              );
+            }
+            ctx.fillStyle = isToday ? color : "rgba(148,175,209,0.5)";
+            ctx.font = "10px Share Tech Mono";
+            ctx.textAlign = "center";
+            ctx.fillText(days[i], x + bw / 2, H - 7);
+          });
+
+          document.getElementById("nc-legend").innerHTML = `
+      <span style="color:#ef4444;">— min (${target.min}${target.unit})</span>
+      <span style="color:#22c55e;">— ideal (${target.ideal}${target.unit})</span>
+    `;
+        },
+
+        // ── 3. XP EARNED PER DAY (14 days) ──
+        renderXPTimeline() {
+          const r = Stats._canvas("xp-timeline-chart");
+          if (!r) return;
+          const { ctx, W, H } = r;
+          const s = S.get();
+          const pad = { t: 16, r: 10, b: 28, l: 36 };
+          const chartH = H - pad.t - pad.b;
+          const days = 14;
+          const today = new Date();
+          const data = [];
+          for (let i = days - 1; i >= 0; i--) {
+            const d = new Date(today);
+            d.setDate(today.getDate() - i);
+            const dateStr = d.toISOString().split("T")[0];
+            const workout = s.workoutHistory.find((w) => w.date === dateStr);
+            const mXP = s.missionState[dateStr]
+              ? s.missionState[dateStr].reduce((a, m) => {
+                  const rule = FQ.MISSION_RULES.find((r2) => r2.id === m.id);
+                  return a + (rule ? rule.mission.xp || 0 : 0);
+                }, 0)
+              : 0;
+            data.push({
+              date: dateStr,
+              xp: (workout ? workout.xp || 80 : 0) + mXP,
+            });
+          }
+          const maxVal = Math.max(...data.map((d) => d.xp), 10);
+          const gap = (W - pad.l - pad.r) / days;
+          const bw = gap * 0.55;
+          const color = "#f5c400";
+
+          Stats._gridLines(ctx, W, H, pad);
+          Stats._yLabels(ctx, W, H, pad, maxVal);
+
+          data.forEach((d, i) => {
+            const x = pad.l + i * gap + (gap - bw) / 2;
+            const bh = Math.max(1, (d.xp / maxVal) * chartH);
+            const y = pad.t + chartH - bh;
+            const isToday = d.date === FQ.today();
+            Stats._bar(ctx, x, y, bw, bh, color, true);
+            if (isToday) {
+              ctx.strokeStyle = color;
+              ctx.lineWidth = 1.5;
+              ctx.strokeRect(x - 1, y - 1, bw + 2, bh + 1);
+            }
+            if (d.xp > 0) {
+              ctx.fillStyle = color;
+              ctx.font = "9px Share Tech Mono";
+              ctx.textAlign = "center";
+              ctx.fillText(d.xp, x + bw / 2, y - 3);
+            }
+            const day = new Date(d.date).getDate();
+            if (i % 2 === 0 || isToday) {
+              ctx.fillStyle = isToday ? color : "rgba(148,175,209,0.5)";
+              ctx.font = "9px Share Tech Mono";
+              ctx.textAlign = "center";
+              ctx.fillText(day, x + bw / 2, H - 7);
+            }
+          });
+        },
+
+        // ── 4. SESSIONS PER WEEK ──
+        renderSessionsPerWeek() {
+          const r = Stats._canvas("sessions-week-chart");
+          if (!r) return;
+          const { ctx, W, H } = r;
+          const s = S.get();
+          const pad = { t: 16, r: 10, b: 28, l: 28 };
+          const chartH = H - pad.t - pad.b;
+          const weeks = 8;
+          const now = new Date();
+          const data = [];
+          for (let w = weeks - 1; w >= 0; w--) {
+            const weekEnd = new Date(now);
+            weekEnd.setDate(now.getDate() - w * 7);
+            const weekStart = new Date(weekEnd);
+            weekStart.setDate(weekEnd.getDate() - 6);
+            const count = s.workoutHistory.filter((h) => {
+              const d = new Date(h.date);
+              return d >= weekStart && d <= weekEnd;
+            }).length;
+            data.push({ label: "W" + (weeks - w), count });
+          }
+          const maxVal = Math.max(...data.map((d) => d.count), 7);
+          const gap = (W - pad.l - pad.r) / weeks;
+          const bw = gap * 0.55;
+
+          Stats._gridLines(ctx, W, H, pad, maxVal);
+          Stats._refLine(
+            ctx,
+            5,
+            maxVal,
+            W,
+            H,
+            pad,
+            "rgba(34,197,94,0.4)",
+            "5/wk goal",
+          );
+
+          data.forEach((d, i) => {
+            const x = pad.l + i * gap + (gap - bw) / 2;
+            const bh = Math.max(1, (d.count / maxVal) * chartH);
+            const y = pad.t + chartH - bh;
+            const isLast = i === weeks - 1;
+            const col =
+              d.count >= 5
+                ? "#22c55e"
+                : d.count >= 3
+                  ? "#00c8f0"
+                  : d.count >= 1
+                    ? "#ff6b2b"
+                    : "#1a2d4a";
+            Stats._bar(ctx, x, y, bw, bh, col, true);
+            if (isLast) {
+              ctx.strokeStyle = "#00c8f0";
+              ctx.lineWidth = 1.5;
+              ctx.strokeRect(x - 1, y - 1, bw + 2, bh + 1);
+            }
+            if (d.count > 0) {
+              ctx.fillStyle = col;
+              ctx.font = "9px Share Tech Mono";
+              ctx.textAlign = "center";
+              ctx.fillText(d.count, x + bw / 2, y - 3);
+            }
+            ctx.fillStyle = isLast ? "#00c8f0" : "rgba(148,175,209,0.5)";
+            ctx.font = "9px Share Tech Mono";
+            ctx.textAlign = "center";
+            ctx.fillText(d.label, x + bw / 2, H - 7);
+          });
+        },
+
+        // ── 5. NUTRIENT RADAR ──
+        renderNutrientRadar() {
+          const r = Stats._canvas("nutrient-radar-chart");
+          if (!r) return;
+          const { ctx, W, H } = r;
+          const totals = S.todayNutrition();
+          const targets = FQ.NUTRITION_TARGETS;
+          const cx = W / 2,
+            cy = H / 2;
+          const maxR = Math.min(cx, cy) - 26;
+          const axes = [
+            { key: "protein", label: "Protein", color: "#00c8f0" },
+            { key: "calories", label: "Energy", color: "#f5c400" },
+            { key: "carbs", label: "Carbs", color: "#a855f7" },
+            { key: "fat", label: "Fat", color: "#ff6b2b" },
+            { key: "fiber", label: "Fiber", color: "#22c55e" },
+            { key: "calcium", label: "Calcium", color: "#e879f9" },
+          ];
+          const n = axes.length;
+          const angle = (i) => (i / n) * Math.PI * 2 - Math.PI / 2;
+          const pt = (i, pct, rr) => ({
+            x: cx + (rr !== undefined ? rr : maxR) * pct * Math.cos(angle(i)),
+            y: cy + (rr !== undefined ? rr : maxR) * pct * Math.sin(angle(i)),
+          });
+
+          // Rings
+          [0.25, 0.5, 0.75, 1].forEach((f) => {
+            ctx.beginPath();
+            for (let i = 0; i < n; i++) {
+              const p = pt(i, f);
+              i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+            }
+            ctx.closePath();
+            ctx.strokeStyle =
+              f === 1 ? "rgba(26,45,74,0.9)" : "rgba(26,45,74,0.4)";
+            ctx.lineWidth = f === 1 ? 1 : 0.5;
+            ctx.stroke();
+          });
+
+          // Axis spokes
+          for (let i = 0; i < n; i++) {
+            const p = pt(i, 1);
+            ctx.strokeStyle = "rgba(26,45,74,0.5)";
+            ctx.lineWidth = 0.5;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(p.x, p.y);
+            ctx.stroke();
+          }
+
+          // Min polygon
+          ctx.beginPath();
+          axes.forEach((a, i) => {
+            const pct = Math.min(1, targets[a.key].min / targets[a.key].ideal);
+            const p = pt(i, pct);
+            i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+          });
+          ctx.closePath();
+          ctx.strokeStyle = "rgba(239,68,68,0.35)";
+          ctx.lineWidth = 1;
+          ctx.setLineDash([3, 3]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Data polygon
+          ctx.beginPath();
+          axes.forEach((a, i) => {
+            const pct = Math.min(
+              1.05,
+              (totals[a.key] || 0) / targets[a.key].ideal,
+            );
+            const p = pt(i, pct);
+            i === 0 ? ctx.moveTo(p.x, p.y) : ctx.lineTo(p.x, p.y);
+          });
+          ctx.closePath();
+          ctx.fillStyle = "rgba(0,200,240,0.1)";
+          ctx.fill();
+          ctx.strokeStyle = "#00c8f0";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+
+          // Dots + labels
+          axes.forEach((a, i) => {
+            const pct = Math.min(
+              1.05,
+              (totals[a.key] || 0) / targets[a.key].ideal,
+            );
+            const p = pt(i, pct);
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = a.color;
+            ctx.fill();
+            const lp = {
+              x: cx + (maxR + 18) * Math.cos(angle(i)),
+              y: cy + (maxR + 18) * Math.sin(angle(i)),
+            };
+            ctx.fillStyle = a.color;
+            ctx.font = "bold 9px Share Tech Mono";
+            const ca = Math.cos(angle(i));
+            ctx.textAlign = ca > 0.2 ? "left" : ca < -0.2 ? "right" : "center";
+            ctx.fillText(a.label, lp.x, lp.y + 4);
+          });
+        },
+
+        // ── 6. LEVEL PROGRESS RADIAL ──
+        renderLevelProgress() {
+          const r = Stats._canvas("level-progress-chart");
+          if (!r) return;
+          const { ctx, W, H } = r;
+          const s = S.get();
+          const lv = S.currentLevel();
+          const nextLv = FQ.LEVELS.find((l) => l.id === s.currentLevel + 1);
+          const cx = W / 2,
+            cy = H / 2;
+          const outerR = Math.min(cx, cy) - 14;
+          const innerR = outerR - 18;
+
+          const xpCur = lv.xpToUnlock;
+          const xpNext = nextLv ? nextLv.xpToUnlock : xpCur + 300;
+          const xpPct = Math.min(
+            1,
+            Math.max(0, (s.xp - xpCur) / (xpNext - xpCur)),
+          );
+
+          const st = lv.unlockCondition.sessions;
+          const sd = S.levelSessionCount(s.currentLevel);
+          const sPct =
+            st > 0 ? Math.min(1, sd / st) : s.bossCleared.length > 0 ? 1 : 0.3;
+
+          const startA = -Math.PI / 2;
+          ctx.lineCap = "round";
+
+          const drawArc = (rr, from, to, col, lw) => {
+            ctx.beginPath();
+            ctx.arc(cx, cy, rr, from, to);
+            ctx.strokeStyle = col;
+            ctx.lineWidth = lw;
+            ctx.stroke();
+          };
+
+          // BG rings
+          drawArc(outerR, 0, Math.PI * 2, "rgba(26,45,74,0.6)", 14);
+          drawArc(innerR, 0, Math.PI * 2, "rgba(26,45,74,0.6)", 10);
+
+          // XP ring
+          if (xpPct > 0)
+            drawArc(
+              outerR,
+              startA,
+              startA + Math.PI * 2 * xpPct,
+              "#f5c400",
+              14,
+            );
+          // Sessions ring
+          if (sPct > 0)
+            drawArc(innerR, startA, startA + Math.PI * 2 * sPct, "#00c8f0", 10);
+
+          // Center text
+          ctx.fillStyle = "#e8f1ff";
+          ctx.font = "bold 20px Orbitron";
+          ctx.textAlign = "center";
+          ctx.fillText("LVL " + lv.id, cx, cy - 6);
+          ctx.fillStyle = "rgba(148,175,209,0.7)";
+          ctx.font = "9px Share Tech Mono";
+          ctx.fillText(lv.title, cx, cy + 10);
+
+          const legend = document.getElementById("level-progress-legend");
+          if (legend) {
+            legend.innerHTML = `
+        <div style="display:flex;gap:20px;justify-content:center;margin-top:10px;font-size:11px;font-family:var(--font-mono);">
+          <span style="color:var(--gold);">● XP ${Math.round(xpPct * 100)}% to next level</span>
+          <span style="color:var(--accent);">● Sessions ${sd}${st > 0 ? "/" + st : ""}</span>
+        </div>
+      `;
+          }
+        },
+
+        renderRoadmap() {
+          const s = S.get();
+          const container = document.getElementById("level-roadmap");
+          if (!container) return;
+          container.innerHTML = FQ.LEVELS.map((lv) => {
+            const done = lv.id < s.currentLevel;
+            const current = lv.id === s.currentLevel;
+            const locked = lv.id > s.currentLevel;
+            const zone = FQ.ZONES.find((z) => z.id === lv.zone);
+            const sessions = s.workoutHistory.filter(
+              (w) => w.level === lv.id,
+            ).length;
+            const st = lv.unlockCondition.sessions;
+            return `
+        <div class="roadmap-item">
+          <div class="rm-circle" style="
+            background:${done ? "#22c55e" : current ? "var(--accent)" : "var(--bg3)"};
+            border:2px solid ${done ? "#22c55e" : current ? "var(--accent)" : "var(--border)"};
+            color:${done || current ? "var(--bg)" : "var(--text-dim)"};
+            box-shadow:${current ? "0 0 15px rgba(0,200,240,0.3)" : "none"};
+          ">${done ? "✓" : lv.id}</div>
+          <div style="flex:1;">
+            <div class="rm-name" style="color:${locked ? "var(--text-dim)" : "var(--text-bright)"};">${lv.title}</div>
+            <div class="rm-sub">${zone.name}</div>
+            ${current && st > 0 ? `<div style="margin-top:5px;"><div class="pbar" style="height:4px;"><div class="pbar-fill" style="width:${Math.min(100, (sessions / st) * 100)}%;background:var(--accent);"></div></div><div style="font-size:10px;color:var(--text-dim);font-family:var(--font-mono);margin-top:3px;">${sessions}/${st} sessions</div></div>` : ""}
+          </div>
+          <div>${current ? '<span class="badge badge-cyan">NOW</span>' : done ? '<span class="badge badge-green">✓</span>' : '<span style="opacity:.35;font-size:18px;">🔒</span>'}</div>
+        </div>
+      `;
+          }).join("");
+        },
+
+        prefillBMI() {
+          const s = S.get();
+          const lastW = s.weightLog[s.weightLog.length - 1];
+          if (lastW) document.getElementById("bmi-weight").value = lastW.weight;
+          document.getElementById("bmi-height").value = 190;
+        },
+
+        updateBMI() {
+          const h =
+            parseFloat(document.getElementById("bmi-height").value) / 100;
+          const w = parseFloat(document.getElementById("bmi-weight").value);
+          if (!h || !w || h <= 0 || w <= 0) return;
+          S.logWeight(w);
+          const bmi = (w / (h * h)).toFixed(1);
+          let cat, color, advice;
+          if (bmi < 16) {
+            cat = "Severely Underweight";
+            color = "var(--red)";
+            advice =
+              "Nutrition is priority #1. You need to eat significantly more — especially protein and calories.";
+          } else if (bmi < 18.5) {
+            cat = "Underweight";
+            color = "var(--accent2)";
+            advice =
+              "Getting there. Keep increasing protein. Add soya chunks and chana wherever you can.";
+          } else if (bmi < 25) {
+            cat = "Healthy Weight";
+            color = "var(--green)";
+            advice =
+              "You made it to healthy range. Now focus on muscle composition over just weight.";
+          } else {
+            cat = "Above Range";
+            color = "var(--gold)";
+            advice =
+              "Adjust nutrition — focus on protein quality, and keep training.";
+          }
+          document.getElementById("bmi-result").innerHTML = `
+      <div style="font-family:var(--font-hud);font-size:44px;font-weight:900;color:${color};">${bmi}</div>
+      <div style="font-size:14px;color:${color};margin-bottom:8px;">${cat}</div>
+      <div style="font-size:13px;color:var(--text-dim);line-height:1.6;">${advice}</div>
+    `;
+          UI.toast("BMI: " + bmi);
+        },
+      };
+    </script>
+    <script>
+      // ============================================================
+      // FITQUEST v2 — APP BOOTSTRAP
+      // ============================================================
+      App.startJourney = function () {
+        const name = document.getElementById("ob-name").value.trim();
+        if (!name) {
+          UI.toast("Enter your warrior name!");
+          return;
+        }
+        S.load();
+        S._state.name = name;
+        S.save();
+        document.getElementById("onboarding").style.display = "none";
+        App.init();
+        UI.toast("Welcome, " + name + "! Your quest begins. ⚡", "gold");
+      };
+
+      App.init = function () {
+        document.getElementById("app-shell").classList.add("ready");
+        UI.renderHome();
+        UI.renderWorkoutScreen();
+        UI.updateTopBar();
+      };
+
+      App.closeLevelUp = function () {
+        document.getElementById("levelup-screen").classList.remove("show");
+        UI.renderHome();
+        UI.renderWorkoutScreen();
+      };
+
+      // ── Boot ──
+      (function boot() {
+        S.load();
+        if (S.get().name) {
+          document.getElementById("onboarding").style.display = "none";
+          App.init();
+        }
+      })();
+    </script>
+  </body>
+</html>
