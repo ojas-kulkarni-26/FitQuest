@@ -4105,10 +4105,10 @@
           document.getElementById("screen-" + name).classList.add("active");
           document.getElementById("nav-" + name).classList.add("active");
           // Deferred so all modules are guaranteed to be defined
-          setTimeout(() => {
-            if (name === "stats") Stats.render();
+         setTimeout(() => {
+            if (name === "stats") window.Stats && window.Stats.render();
             if (name === "boss") UI.renderBoss();
-            if (name === "nutrition") Nutrition.render();
+            if (name === "nutrition") window.Nutrition && window.Nutrition.render();
             if (name === "workout") UI.renderWorkoutScreen();
             if (name === "home") UI.renderHome();
           }, 0);
