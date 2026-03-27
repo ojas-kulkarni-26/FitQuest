@@ -5109,6 +5109,7 @@
             return;
           }
           S.logFood(Nutrition._pendingFoodId, qty);
+          console.log(S.todayNutrition());
           UI.closeModal("qty-modal");
           Nutrition.render();
           const food = S.getAllFoods().find(
