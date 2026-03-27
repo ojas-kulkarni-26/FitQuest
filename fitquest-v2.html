@@ -3872,7 +3872,7 @@
           iron: 0,
         };
         log.forEach((entry) => {
-          const food = FQ.FOODS.find((f) => f.id === entry.foodId);
+          const food = [...FQ.FOODS, ...(state.customFoods || [])].find((f) => f.id === entry.foodId);
           if (!food) return;
           const ratio = entry.qty / food.serving;
           Object.keys(totals).forEach((k) => {
